@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div id="app">
+    <h1 @click="handleClick">{{txt}}</h1>
+
+    <div v-for="item in list">{{item.name}}</div>
+  </div>
+  <script src="./js/debugger.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      props: {
+        msg: {
+          type: String,
+          default: 'msg'
+        }
+      },
+      data() {
+        return {
+          txt: '1234',
+          list: [{name: 'zs', id: 1},{name: 'ls', id: 2},{name: 'ww', id: 3}]
+        }
+      },
+
+      methods: {
+        handleClick() {
+          if (this.txt === '1234') {
+            this.txt = '5678'
+          } else {
+            this.txt = '1234'
+          }
+        }
+      },
+    })
+
+
+  </script>
+</body>
+</html>
