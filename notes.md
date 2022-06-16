@@ -1,4 +1,5 @@
 # 模板编译
+
 ## pase函数
 
 里面维护了一个 ***stack***  然后调用 ***parseHTMl*** 并且传入 **template**模板 和 **start** 、**end** 、**chars** 、**comment** 四个方法
@@ -135,4 +136,104 @@
       type: 1
     }
   ]
+```
+#### 解析 v-for
+
+通过 **processFor** 方法来处理 ***v-for*** 然后通过 **processFor** 里的 **getAndRemoteAttr** 方法 得到 ***v-for*** 属性的值 例如：`item in list` 然后通过循环得到 ***v-for*** 在 **attrList** 的位置 然后进行删除
+```
+function getAndRemoveAttr (
+  el,
+  name,
+  removeFromMap
+) {
+  var val
+  if ((val = el.attrsMap[name]) != null) {
+    var list = el.attrsList
+    for (var i = 0, l = list.length; i < l; i++) {
+      if (list[i].name === name) {
+        list.splice(i, 1)
+        break
+      }
+    }
+  }
+  if (removeFromMap) {
+    delete el.attrsMap[name]
+  }
+  return val
+}
+```
+然后将得到的值 `item in list` 传给 **parseFor** 这个方法 里面通过正则匹配 得到 **inMatch** ：`["item in list", "item", "list"]` 最终得到一个 ***res*** 
+```
+{
+  alias: "item",
+  for: "list"
+}
+```
+然后通过 **extend** 方法 将这个 ***res*** 合并到当前的 **element** 的 ***AST*** 上 最终得到合并好的 ***AST***
+```
+{
+  alias: "item",
+  ...
+  for: "list",
+  parent,
+  rawAttrsMap: {
+    v-for: {
+      end: 87,
+      name: "v-for",
+      start: 67,
+      value: "item in list"
+    }
+  }
+  ...
+  type: 1
+}
+```
+
+
+#### 解析文本
+
+从解析的当前位置到下一个 `<` 如果 `indexOf('<')` 大于0 说明之间是文本内容
+##### 解析{{}}
+
+通过 **parseText** 方法最终得到 这样的 res 其中有个 **parseFilters** 解析过滤器
+```
+{
+  expression: "_s(txt)",
+  tokens: [
+    {
+      @binding: "txt"
+    }
+  ]
+}
+```
+然后推入此时 ***currentParent*** 的 ***children***
+```
+{
+  end: 51,
+  expression: "_s(txt)",
+  start: 44,
+  text: "{{txt}}",
+  tokens: [
+    {
+      @binding: "txt"
+    }
+  ],
+  type: 2
+}
+```
+#### 解析End Tag
+
+如匹配到闭合标签 随后将执行 **parseEndTag** 方法 从后向前循环 然后调用 **parseHTML** 传进来的 **end** 方法 然后通过 ``stack.length -= 1`` pop掉 **parse** 方法里的最新解析到的 ***AST*** 元素 最后调用 **closeElement** 方法 里面通过调用 **processElement** 方法 然后通过其里面的 **processKey**, **processRef**, **processSlotContent**, **processSlotOutlet**, **processComponent**, **processAttrs** 方法分别对元素进行 ***key*** , ***Ref***, ***slot***, ***componnet(:is)***, ***Attr*** 进行处理 然后将处理好的 ***element*** 进行
+```
+currentParent.children.push(element)
+element.parent = currentParent
+```
+然后再将 **parseHTML** 的 ***stack*** 通过 `stack.length = pos` pop掉最新的解析标签
+
+# 代码生成
+
+调用 **generate** 方法 传入解析好的 ***AST*** 
+```
+  { 
+
 ```
