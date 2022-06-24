@@ -230,10 +230,130 @@ element.parent = currentParent
 ```
 然后再将 **parseHTML** 的 ***stack*** 通过 `stack.length = pos` pop掉最新的解析标签
 
-# 代码生成
+# AST生成render函数
 
-调用 **generate** 方法 传入解析好的 ***AST*** 
+调用 **generate** 方法 传入解析好的 ***AST*** 方法内部调用 **genElement** 方法 传入 ***AST*** 和 ***option*** 
 ```
-  { 
+  { attrs: {"id": "app"} }
+
+  [
+    {on: {'click': handleClick}, }
+  ]
 
 ```
+## genElement函数
+
+通过各种判断来决定生成什么
+```
+function genElement (el, state) {
+  if (el.parent) {
+    el.pre = el.pre || el.parent.pre;
+  }
+
+  if (el.staticRoot && !el.staticProcessed) {
+    return genStatic(el, state)
+  } else if (el.once && !el.onceProcessed) {
+    return genOnce(el, state)
+  } else if (el.for && !el.forProcessed) {
+    return genFor(el, state)
+  } else if (el.if && !el.ifProcessed) {
+    return genIf(el, state)
+  } else if (el.tag === 'template' && !el.slotTarget && !state.pre) {
+    return genChildren(el, state) || 'void 0'
+  } else if (el.tag === 'slot') {
+    return genSlot(el, state)
+  } else {
+    // component or element
+    var code;
+    if (el.component) {
+      code = genComponent(el.component, el, state);
+    } else {
+      var data;
+      if (!el.plain || (el.pre && state.maybeComponent(el))) {
+        data = genData$2(el, state);
+      }
+
+      var children = el.inlineTemplate ? null : genChildren(el, state, true);
+      code = "_c('" + (el.tag) + "'" + (data ? ("," + data) : '') + (children ? ("," + children) : '') + ")";
+    }
+    // module transforms
+    for (var i = 0; i < state.transforms.length; i++) {
+      code = state.transforms[i](el, code);
+    }
+    return code
+  }
+}
+```
+在 **component or element** 调用 **genData$2**方法 处理标签上的属性 得到 ***data***
+```
+"{
+  attrs: {
+    "id": "app"
+  }
+}"
+```
+然后调用 **genChildren** 生成子元素 这里面有个 **genNode** 方法 genNode方法针对不同的元素去调用生成不同元素的方法
+```
+function genChildren (
+  el,
+  state,
+  checkSkip,
+  altGenElement,
+  altGenNode
+) {
+  var children = el.children;
+  if (children.length) {
+    var el$1 = children[0];
+    // optimize single v-for
+    if (children.length === 1 &&
+      el$1.for &&
+      el$1.tag !== 'template' &&
+      el$1.tag !== 'slot'
+    ) {
+      var normalizationType = checkSkip
+        ? state.maybeComponent(el$1) ? ",1" : ",0"
+        : "";
+      return ("" + ((altGenElement || genElement)(el$1, state)) + normalizationType)
+    }
+    var normalizationType$1 = checkSkip
+      ? getNormalizationType(children, state.maybeComponent)
+      : 0;
+    var gen = altGenNode || genNode;
+    return ("[" + (children.map(function (c) { return gen(c, state); }).join(',')) + "]" + (normalizationType$1 ? ("," + normalizationType$1) : ''))
+  }
+}
+```
+```
+function genNode (node, state) {
+  if (node.type === 1) {
+    return genElement(node, state)
+  } else if (node.type === 3 && node.isComment) {
+    return genComment(node)
+  } else {
+    return genText(node)
+  }
+}
+```
+这里基本逻辑是通过不断的循环元素 父元素 -> 子元素 -> 子子元素 -> 直到子元素循环完毕 结束 得到一个 ***code***
+```
+code = "_c(
+  'div', 
+  {attrs: {"id": "app"}},
+  [
+    _c(
+      'h1',
+      {on: {"click": "handleClick"}},
+      [
+        _v(_s(txt))
+      ]
+    ),
+    _v(""),
+    _l(
+      (list), 
+      function (item) {return _c('div', [_v(_s(item.name))])}
+    )
+  ],
+  2
+)"
+```
+
