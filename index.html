@@ -34,7 +34,9 @@
           if (this.txt === '1234') {
             this.txt = '5678'
           } else {
-            this.txt = '1234'
+            this.$nextTick(() => {
+              this.txt = '1234'
+            })
           }
         }
       },
