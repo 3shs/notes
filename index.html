@@ -10,7 +10,7 @@
   <div id="app">
     <h1 @click="handleClick">{{txt}}</h1>
 
-    <div v-for="item in list">{{item.name}}</div>
+    <div v-for="item in list" :key="item.id">{{item.name}}</div>
   </div>
   <script src="./js/index.js"></script>
   <script>
@@ -33,6 +33,7 @@
         handleClick() {
           if (this.txt === '1234') {
             this.txt = '5678'
+            this.list = [{name: 'ls', id: 2},{name: 'ww', id: 3},{name: 'zs', id: 1}]
           } else {
             this.$nextTick(() => {
               this.txt = '1234'
@@ -42,6 +43,21 @@
       },
     })
 
+
+    let obj = {
+      name: 'zs',
+      age: 19,
+      _c: function() {
+        console.log('_c', 111)
+      },
+      _v: function() {
+        console.log('_v', 222)
+      }
+    }
+
+    let render = new Function('with(this) { _c(_v()), _v() }')
+
+    render.call(obj)
 
   </script>
 </body>
