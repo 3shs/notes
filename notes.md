@@ -11,7 +11,7 @@
 #### 解析Start Tag
 
 调用 **parseStartTag** 这个方法主要匹配标签的开始到结束以及里面所有的属性 `<div id="app">` 顺序依次是 `<div` 、`id="app"` 、`>` 通过 **advance** 方法去记录游标 ***index*** 的位置并且通过 **subString** 来截取字符串 再通过 **while** 循环匹配 **attr** 直到属性全部匹配完匹配到 `>` 结束 最终得到一个 ***match*** 例如：
-```
+```javascript
   {
     attrs: [
       ['id=app', 'id', '=', 'app', start: 4, end: 13, ... ]
@@ -23,7 +23,7 @@
   }
 ```
 然后通过 **handleStartTag** 方法处理一下 ***match*** 得到例如： `attr = [{name: 'id', value: 'app', start: 5, end: 13}]` 这样的属性数组
-```
+```javascript
   var l = match.attrs.length
   var attrs = new Array(l)
   for (var i = 0; i < l; i++) {
@@ -43,7 +43,7 @@
   }
 ```
 然后 **push** 到 **parseHTML** 的 ***stack*** 
-```
+```javascript
   [
     {
       attrs: [
@@ -62,7 +62,7 @@
   ]
 ```
 然后再调用 **parseHTML** 传进来的 **start** 的方法创建 ***AST*** element 同时，在这个方法里解析 ***v-pre*** 、***v-for*** 、***v-once*** 最终得到 ***AST*** element 例如：
-```
+```javascript
   {
     attrsList: [
       {
@@ -90,7 +90,7 @@
   }
 ```
 然后做个判断
-```
+```javascript
   // 是否有root的根节点
   if (!root) {
     root = element
@@ -108,7 +108,7 @@
 ```
 然后将 ***AST*** element **push** **parse** 的 ***stack*** 内
 
-```
+```javascript
   [
     {
       attrsList: [
@@ -140,7 +140,7 @@
 #### 解析 v-for
 
 通过 **processFor** 方法来处理 ***v-for*** 然后通过 **processFor** 里的 **getAndRemoteAttr** 方法 得到 ***v-for*** 属性的值 例如：`item in list` 然后通过循环得到 ***v-for*** 在 **attrList** 的位置 然后进行删除
-```
+```javascript
 function getAndRemoveAttr (
   el,
   name,
@@ -163,14 +163,14 @@ function getAndRemoveAttr (
 }
 ```
 然后将得到的值 `item in list` 传给 **parseFor** 这个方法 里面通过正则匹配 得到 **inMatch** ：`["item in list", "item", "list"]` 最终得到一个 ***res*** 
-```
+```javascript
 {
   alias: "item",
   for: "list"
 }
 ```
 然后通过 **extend** 方法 将这个 ***res*** 合并到当前的 **element** 的 ***AST*** 上 最终得到合并好的 ***AST***
-```
+```javascript
 {
   alias: "item",
   ...
@@ -196,7 +196,7 @@ function getAndRemoveAttr (
 ##### 解析{{}}
 
 通过 **parseText** 方法最终得到 这样的 res 其中有个 **parseFilters** 解析过滤器
-```
+```javascript
 {
   expression: "_s(txt)",
   tokens: [
@@ -207,7 +207,7 @@ function getAndRemoveAttr (
 }
 ```
 然后推入此时 ***currentParent*** 的 ***children***
-```
+```javascript
 {
   end: 51,
   expression: "_s(txt)",
@@ -224,7 +224,7 @@ function getAndRemoveAttr (
 #### 解析End Tag
 
 如匹配到闭合标签 随后将执行 **parseEndTag** 方法 从后向前循环 然后调用 **parseHTML** 传进来的 **end** 方法 然后通过 ``stack.length -= 1`` pop掉 **parse** 方法里的最新解析到的 ***AST*** 元素 最后调用 **closeElement** 方法 里面通过调用 **processElement** 方法 然后通过其里面的 **processKey**, **processRef**, **processSlotContent**, **processSlotOutlet**, **processComponent**, **processAttrs** 方法分别对元素进行 ***key*** , ***Ref***, ***slot***, ***componnet(:is)***, ***Attr*** 进行处理 然后将处理好的 ***element*** 进行
-```
+```javascript
 currentParent.children.push(element)
 element.parent = currentParent
 ```
@@ -233,7 +233,7 @@ element.parent = currentParent
 # AST生成render函数
 
 调用 **generate** 方法 传入解析好的 ***AST*** 方法内部调用 **genElement** 方法 传入 ***AST*** 和 ***option*** 
-```
+```javascript
   { attrs: {"id": "app"} }
 
   [
@@ -244,7 +244,7 @@ element.parent = currentParent
 ## genElement函数
 
 通过各种判断来决定生成什么
-```
+```javascript
 function genElement (el, state) {
   if (el.parent) {
     el.pre = el.pre || el.parent.pre;
@@ -285,7 +285,7 @@ function genElement (el, state) {
 }
 ```
 在 **component or element** 调用 **genData$2**方法 处理标签上的属性 得到 ***data***
-```
+```javascript
 "{
   attrs: {
     "id": "app"
@@ -293,7 +293,7 @@ function genElement (el, state) {
 }"
 ```
 然后调用 **genChildren** 生成子元素 这里面有个 **genNode** 方法 genNode方法针对不同的元素去调用生成不同元素的方法
-```
+```javascript
 function genChildren (
   el,
   state,
@@ -323,7 +323,7 @@ function genChildren (
   }
 }
 ```
-```
+```javascript
 function genNode (node, state) {
   if (node.type === 1) {
     return genElement(node, state)
@@ -335,7 +335,7 @@ function genNode (node, state) {
 }
 ```
 这里基本逻辑是通过不断的循环元素 父元素 -> 子元素 -> 子子元素 -> 直到所有子元素循环完毕 结束 得到一个 ***code***
-```
+```javascript
 code = "_c(
   'div', 
   {attrs: {"id": "app"}},
@@ -361,16 +361,16 @@ code = "_c(
 # mount阶段
 
 在挂载阶段之前 先 **callHook** 一下 **beforeMount** 的函数 然后给 **updateComponent** 赋值
-```
+```javascript
 updateComponent = function () {
   vm._update(vm._render(), hydrating)
 }
 ```
-```
+```javascript
 vnode = render.call(vm._renderProxy, vm.$createElement);
 ```
 然后进入 **Watcher** 将 **updateComponent** 传给 **Watcher** Watcher 经过一系列初始化 然后调用 **updateComponent** 调用 **_render** 函数 然后调用 利用 ***code*** 生成好的 **render** 函数 并且传入 **createElement** 方法 通过 读取 ***_c*** (被 proxy)  调用 **createElement** 然后 **createElement** 调用 **_createElement** 生成完整的 ***vnode***
-```
+```javascript
 function VNode(
   tag,
   data,
@@ -408,7 +408,7 @@ function VNode(
 }
 ```
 然后传入 **vm._render** 生成好的 ***vnode*** 给 **vm._update** 这里分为两种情况 如果之前已经有 ***vm._vnode*** 那就进行 **updates** 否则就是属于第一次挂载
-```
+```javascript
 Vue.prototype._update = function (vnode, hydrating) {
   var vm = this;
   var prevEl = vm.$el;
@@ -443,7 +443,7 @@ Vue.prototype._update = function (vnode, hydrating) {
 ## 第一次挂载 （initial render）
 
 第一次挂载 进行 **patch** 的时候 传递的 ***oldVnode*** 就是真实的Dom **vm.$el** ***vnode*** 就是通过 **_render** 方法生成的 ***vnode*** 
-```
+```javascript
 function patch (oldVnode, vnode, hydrating, removeOnly) {
   if (isUndef(vnode)) {
     if (isDef(oldVnode)) { invokeDestroyHook(oldVnode); }
@@ -562,9 +562,9 @@ createElm 主要接收 虚拟 Dom 对象 和 当前虚拟 Dom 父节点 以及 �
 然后 利用 tag 创建 真实的 Dom 挂在 ***vnode*** 的 ***elm*** 属性上
 然后调用 **createChildren** 在 createChildren 里面继续调用 **createElm** 方法创建元素
 在 **createChildren** 的时候 会先调用 **checkDuplicateKeys** 方法 查看是否有相同的key值
-实则循环调用 将 ***vnode*** 一一对应的节点 转成 真实的 Dom 结构
+基本逻辑就是循环调用 将 ***vnode*** 一一对应的节点 转成 真实的 Dom 结构
 createElm 方法 主要就是创建 元素节点 注释节点 和 文本节点 判断依次顺序为 
-``` 
+``` javascript
 if (isDef(tag)) { 
 
   do something... 
@@ -580,7 +580,7 @@ if (isDef(tag)) {
 }
 ```
  
-```
+```javascript
 function createElm (
   vnode,
   insertedVnodeQueue,
@@ -670,8 +670,8 @@ function createChildren (vnode, children, insertedVnodeQueue) {
 
 这个方法主要用来处理 ***vnode*** 上面 ***data*** 属性 cbs.create 里面主要存放了 一些 update 标签上的属性的方法
 同时，标签上写的 方法 也是在这里 通过 updateDOMListeners 来注册的
-```
-[
+```javascript
+cbs.create = [
   updateAttrs(oldVnode, vnode),
   updateClass(oldVnode, vnode),
   updateDOMListeners(oldVnode, vnode),
@@ -693,5 +693,115 @@ function invokeCreateHooks (vnode, insertedVnodeQueue) {
     if (isDef(i.create)) { i.create(emptyNode, vnode); }
     if (isDef(i.insert)) { insertedVnodeQueue.push(vnode); }
   }
+}
+```
+##### updateDOMListeners
+
+基本原理还是利用 **addEventListener** 来注册事件
+在这个方法里面拿到 **oldVnode** 和 **vnode** 上面 data 上面的 on 属性 然后传入 **updateListeners** 这个方法
+在 updateListeners 循环遍历 on 属性上面的事件 拿到 新事件 和 旧事件 
+然后在 **invoker** 方法下 挂在一个静态属性 fns 并把 注册的事件赋给它
+通过 **add** 方法 注册事件
+在 **add** 方法里 通过 **addEventListener** 注册事件
+最后移除掉 oldVnode 上面的 事件
+
+# update 阶段
+
+这个阶段主要是打 **patch** 通过 ***Diff*** 算法 来对比新旧 **vnode** 的区别 然后更新 旧的 **vnode** 完成数据更新
+这里的 ***Diff*** 主要通过 两边向中间进行对比
+定义 ***oldVnode*** 开始的下标 和 ***newVnode*** 开始的下标 分别是 **oldStartIdx** **newStartIdx**
+定义 ***oldVnode*** 结束的下标 以及 开始元素 和 结束元素 分别是 **oldEndIdx** **oldStartVnode** **oldEndVnode**
+定义 ***newVnode*** 结束的下标 以及 开始元素 和 结束元素 分别是 **newEndIdx** **newStartVnode** **newEndVnode**
+判断 两个元素 是否一样 如果一样就进行 patch
+
+```javascript
+function updateChildren (parentElm, oldCh, newCh, insertedVnodeQueue, removeOnly) {
+  var oldStartIdx = 0;
+  var newStartIdx = 0;
+  var oldEndIdx = oldCh.length - 1;
+  var oldStartVnode = oldCh[0];
+  var oldEndVnode = oldCh[oldEndIdx];
+  var newEndIdx = newCh.length - 1;
+  var newStartVnode = newCh[0];
+  var newEndVnode = newCh[newEndIdx];
+  var oldKeyToIdx, idxInOld, vnodeToMove, refElm;
+
+  // removeOnly is a special flag used only by <transition-group>
+  // to ensure removed elements stay in correct relative positions
+  // during leaving transitions
+  var canMove = !removeOnly;
+
+  {
+    checkDuplicateKeys(newCh);
+  }
+
+  while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
+    if (isUndef(oldStartVnode)) {
+      oldStartVnode = oldCh[++oldStartIdx]; // Vnode has been moved left
+    } else if (isUndef(oldEndVnode)) {
+      oldEndVnode = oldCh[--oldEndIdx];
+    } else if (sameVnode(oldStartVnode, newStartVnode)) {
+      patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue, newCh, newStartIdx);
+      oldStartVnode = oldCh[++oldStartIdx];
+      newStartVnode = newCh[++newStartIdx];
+    } else if (sameVnode(oldEndVnode, newEndVnode)) {
+      patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue, newCh, newEndIdx);
+      oldEndVnode = oldCh[--oldEndIdx];
+      newEndVnode = newCh[--newEndIdx];
+    } else if (sameVnode(oldStartVnode, newEndVnode)) { // Vnode moved right
+      patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue, newCh, newEndIdx);
+      canMove && nodeOps.insertBefore(parentElm, oldStartVnode.elm, nodeOps.nextSibling(oldEndVnode.elm));
+      oldStartVnode = oldCh[++oldStartIdx];
+      newEndVnode = newCh[--newEndIdx];
+    } else if (sameVnode(oldEndVnode, newStartVnode)) { // Vnode moved left
+      patchVnode(oldEndVnode, newStartVnode, insertedVnodeQueue, newCh, newStartIdx);
+      canMove && nodeOps.insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm);
+      oldEndVnode = oldCh[--oldEndIdx];
+      newStartVnode = newCh[++newStartIdx];
+    } else {
+      if (isUndef(oldKeyToIdx)) { oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx); }
+      idxInOld = isDef(newStartVnode.key)
+        ? oldKeyToIdx[newStartVnode.key]
+        : findIdxInOld(newStartVnode, oldCh, oldStartIdx, oldEndIdx);
+      if (isUndef(idxInOld)) { // New element
+        createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx);
+      } else {
+        vnodeToMove = oldCh[idxInOld];
+        if (sameVnode(vnodeToMove, newStartVnode)) {
+          patchVnode(vnodeToMove, newStartVnode, insertedVnodeQueue, newCh, newStartIdx);
+          oldCh[idxInOld] = undefined;
+          canMove && nodeOps.insertBefore(parentElm, vnodeToMove.elm, oldStartVnode.elm);
+        } else {
+          // same key but different element. treat as new element
+          createElm(newStartVnode, insertedVnodeQueue, parentElm, oldStartVnode.elm, false, newCh, newStartIdx);
+        }
+      }
+      newStartVnode = newCh[++newStartIdx];
+    }
+  }
+  if (oldStartIdx > oldEndIdx) {
+    refElm = isUndef(newCh[newEndIdx + 1]) ? null : newCh[newEndIdx + 1].elm;
+    addVnodes(parentElm, refElm, newCh, newStartIdx, newEndIdx, insertedVnodeQueue);
+  } else if (newStartIdx > newEndIdx) {
+    removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
+  }
+}
+
+
+function sameVnode (a, b) {
+  return (
+    a.key === b.key && (
+      (
+        a.tag === b.tag &&
+        a.isComment === b.isComment &&
+        isDef(a.data) === isDef(b.data) &&
+        sameInputType(a, b)
+      ) || (
+        isTrue(a.isAsyncPlaceholder) &&
+        a.asyncFactory === b.asyncFactory &&
+        isUndef(b.asyncFactory.error)
+      )
+    )
+  )
 }
 ```
