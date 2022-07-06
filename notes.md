@@ -556,26 +556,26 @@ function patch (oldVnode, vnode, hydrating, removeOnly) {
 ```
 ### createElm
 
-这个方法主要是将 ***vnode*** 转为 真实的 Dom 结构
-createElm 主要接收 虚拟 Dom 对象 和 当前虚拟 Dom 父节点 以及 虚拟Dom 上的 Ele属性（真实的Dom） 就是形参中的 refElm
-取出 vnode 上面的 ***data*** 属性 和 ***children*** 属性 以及 ***tag***
-然后 利用 tag 创建 真实的 Dom 挂在 ***vnode*** 的 ***elm*** 属性上
-然后调用 **createChildren** 在 createChildren 里面继续调用 **createElm** 方法创建元素
-在 **createChildren** 的时候 会先调用 **checkDuplicateKeys** 方法 查看是否有相同的key值
-基本逻辑就是循环调用 将 ***vnode*** 一一对应的节点 转成 真实的 Dom 结构
-createElm 方法 主要就是创建 元素节点 注释节点 和 文本节点 判断依次顺序为 
+这个方法主要是将 ***vnode*** 转为 真实的 Dom 结构<br>
+createElm 主要接收 虚拟 Dom 对象 和 当前虚拟 Dom 父节点 以及 虚拟Dom 上的 Ele属性（真实的Dom） 就是形参中的 refElm<br>
+取出 vnode 上面的 ***data*** 属性 和 ***children*** 属性 以及 ***tag***<br>
+然后 利用 tag 创建 真实的 Dom 挂在 ***vnode*** 的 ***elm*** 属性上<br>
+然后调用 **createChildren** 在 createChildren 里面继续调用 **createElm** 方法创建元素<br>
+在 **createChildren** 的时候 会先调用 **checkDuplicateKeys** 方法 查看是否有相同的key值<br>
+基本逻辑就是递归循环调用 将 ***vnode*** 一一对应的节点 转成 真实的 Dom 结构<br>
+createElm 方法 主要就是创建 元素节点 注释节点 和 文本节点 判断依次顺序为<br> 
 ``` javascript
 if (isDef(tag)) { 
 
-  do something... 
+  //do something... 
 
 } else if (isTrue(vnode.isComment)) { 
 
-  do someting... 
-  创建注释节点 插入对应位置
+  //do someting... 
+  //创建注释节点 插入对应位置
 } else { 
-  文本节点
-  创建文本节点 插入对应位置
+  //文本节点
+  //创建文本节点 插入对应位置
 
 }
 ```
@@ -697,22 +697,125 @@ function invokeCreateHooks (vnode, insertedVnodeQueue) {
 ```
 ##### updateDOMListeners
 
-基本原理还是利用 **addEventListener** 来注册事件
-在这个方法里面拿到 **oldVnode** 和 **vnode** 上面 data 上面的 on 属性 然后传入 **updateListeners** 这个方法
-在 updateListeners 循环遍历 on 属性上面的事件 拿到 新事件 和 旧事件 
-然后在 **invoker** 方法下 挂在一个静态属性 fns 并把 注册的事件赋给它
-通过 **add** 方法 注册事件
-在 **add** 方法里 通过 **addEventListener** 注册事件
-最后移除掉 oldVnode 上面的 事件
+基本原理还是利用 **addEventListener** 来注册事件<br>
+在这个方法里面拿到 **oldVnode** 和 **vnode** 上面 data 上面的 on 属性 然后传入 **updateListeners** 这个方法<br>
+在 updateListeners 循环遍历 on 属性上面的事件 拿到 新事件 和 旧事件<br> 
+然后在 **invoker** 方法下 挂在一个静态属性 fns 并把 注册的事件赋给它<br>
+通过 **add** 方法 注册事件<br>
+在 **add** 方法里 通过 **addEventListener** 注册事件<br>
+最后移除掉 oldVnode 上面的 事件<br>
 
 # update 阶段
 
-这个阶段主要是打 **patch** 通过 ***Diff*** 算法 来对比新旧 **vnode** 的区别 然后更新 旧的 **vnode** 完成数据更新
-这里的 ***Diff*** 主要通过 两边向中间进行对比
-定义 ***oldVnode*** 开始的下标 和 ***newVnode*** 开始的下标 分别是 **oldStartIdx** **newStartIdx**
-定义 ***oldVnode*** 结束的下标 以及 开始元素 和 结束元素 分别是 **oldEndIdx** **oldStartVnode** **oldEndVnode**
-定义 ***newVnode*** 结束的下标 以及 开始元素 和 结束元素 分别是 **newEndIdx** **newStartVnode** **newEndVnode**
-判断 两个元素 是否一样 如果一样就进行 patch
+## patchVnode
+
+该方法主要是对node节点进行 **pathc** 进行打补丁<br>
+基本逻辑梳理<br>
+如果 **oldVnode** 和 **vnode** 相等 则直接退出<br>
+如果 **oldVnode** 和 **vnode** 是静态节点 则直接退出 ***静态节点指的的类似于 ```<div>我是静态的</div>``` 里面没有任何变量的值***<br>
+* 如果 **vnode** 里面没有 **text** 属性的值 则说明是元素节点<br>
+  * 判断 **oldVnode** 和 **vnode** 是否都有子节点 如果有
+    * 判断 **oldVnode** 下的子节点 和 **vnode** 下的子节点 是否相同 如果不同 则通过 **updateChildren** 方法去更新子节点（***Diff***）
+    * 判断 如果只有 **vnode** 下有子节点 如果 **oldVnode** 有文本 清空Dom中的文本 最后将 **vnode** 的子节点插入到Dom中
+    * 判断 如果只有 **oldVnode** 下有子节点 则直接清空Dom中的子节点
+    * 判断 如果 **oldVnode** 下有文本 则直接清空Dom中的文本
+* 如果 **vnode** 里面 有 **text** 属性值 则说明是文本节点
+  * 判断 **vnode** 和 **oldVnode** 的 **text** 是否一样 如果不一样  则用 **vnode** 里的文本值直接替换真实Dom节点中的文本内容
+
+```javascript
+function patchVnode (
+  oldVnode,
+  vnode,
+  insertedVnodeQueue,
+  ownerArray,
+  index,
+  removeOnly
+) {
+  if (oldVnode === vnode) {
+    return
+  }
+
+  if (isDef(vnode.elm) && isDef(ownerArray)) {
+    // clone reused vnode
+    vnode = ownerArray[index] = cloneVNode(vnode);
+  }
+
+  var elm = vnode.elm = oldVnode.elm;
+
+  if (isTrue(oldVnode.isAsyncPlaceholder)) {
+    if (isDef(vnode.asyncFactory.resolved)) {
+      hydrate(oldVnode.elm, vnode, insertedVnodeQueue);
+    } else {
+      vnode.isAsyncPlaceholder = true;
+    }
+    return
+  }
+
+  // reuse element for static trees.
+  // note we only do this if the vnode is cloned -
+  // if the new node is not cloned it means the render functions have been
+  // reset by the hot-reload-api and we need to do a proper re-render.
+  if (isTrue(vnode.isStatic) &&
+    isTrue(oldVnode.isStatic) &&
+    vnode.key === oldVnode.key &&
+    (isTrue(vnode.isCloned) || isTrue(vnode.isOnce))
+  ) {
+    vnode.componentInstance = oldVnode.componentInstance;
+    return
+  }
+
+  var i;
+  var data = vnode.data;
+  if (isDef(data) && isDef(i = data.hook) && isDef(i = i.prepatch)) {
+    i(oldVnode, vnode);
+  }
+
+  var oldCh = oldVnode.children;
+  var ch = vnode.children;
+  if (isDef(data) && isPatchable(vnode)) {
+    for (i = 0; i < cbs.update.length; ++i) { cbs.update[i](oldVnode, vnode); }
+    if (isDef(i = data.hook) && isDef(i = i.update)) { i(oldVnode, vnode); }
+  }
+  if (isUndef(vnode.text)) {
+    if (isDef(oldCh) && isDef(ch)) {
+      if (oldCh !== ch) { updateChildren(elm, oldCh, ch, insertedVnodeQueue, removeOnly); }
+    } else if (isDef(ch)) {
+      {
+        checkDuplicateKeys(ch);
+      }
+      if (isDef(oldVnode.text)) { nodeOps.setTextContent(elm, ''); }
+      addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue);
+    } else if (isDef(oldCh)) {
+      removeVnodes(elm, oldCh, 0, oldCh.length - 1);
+    } else if (isDef(oldVnode.text)) {
+      nodeOps.setTextContent(elm, '');
+    }
+  } else if (oldVnode.text !== vnode.text) {
+    nodeOps.setTextContent(elm, vnode.text);
+  }
+  if (isDef(data)) {
+    if (isDef(i = data.hook) && isDef(i = i.postpatch)) { i(oldVnode, vnode); }
+  }
+}
+```
+
+## Diff
+
+这个阶段主要是对子节点打 **patch** 通过 ***Diff*** 算法 来对比新旧 **vnode** 的区别 然后更新 旧的 **vnode** 完成数据更新<br>
+这里的 ***Diff*** 主要通过 两边向中间进行对比<br>
+定义 ***oldVnode*** 开始的下标 和 ***newVnode*** 开始的下标 分别是 **oldStartIdx** **newStartIdx**<br>
+定义 ***oldVnode*** 结束的下标 以及 开始元素 和 结束元素 分别是 **oldEndIdx** **oldStartVnode** **oldEndVnode**<br>
+定义 ***newVnode*** 结束的下标 以及 开始元素 和 结束元素 分别是 **newEndIdx** **newStartVnode** **newEndVnode**<br>
+* 先从起始位置开始对比 如果 ***旧节点的起始元素*** 和 ***新节点的起始元素*** 相同 则进行 **patchVnode** 并且将 ***oldStartIdx*** 和 ***newStartIdx*** 增加一位 利用更新过的下标取得下一个元素并且赋值为 ***旧节点的起始元素*** ***新节点的起始元素*** 然后重新走入循环进行对比
+* 如果起始位置不同 则继续判断 ***oldVnode*** 和 ***newVnode*** 结束元素 是否相同 如果 ***旧节点的结束元素*** 和 ***新节点的结束元素*** 相同 则同样进行 **patchVnode** 并且将 ***oldEndIdx*** 和 ***newEndIdx*** 减去一位 利用更新过的下标取得上一个元素并且赋值为 ***旧节点的结束元素*** ***新节点的结束元素*** 然后重新走入循环进行对比
+* 如果新旧节点起始元素和结束元素都不相同的话 则用 ***旧节点的起始元素*** 和 ***新节点的结束元素*** 进行对比 如果相同的话 则说明元素进行了移动 旧节点的这个元素已经移动到了右边 同样 先进行 **patchVnode** 然后获取旧节点结束元素的下个兄弟节点作为参照 将元素插入Dom中（参照之前） 然后将 ***oldStartIdx*** 增加一位 ***newEndIdx***减去一位 因为是旧节点的起始元素和新节点的结束元素做对比 所以一个向后 一个向前 同样利用更新过的下标取得 ***旧节点的起始元素*** 和 ***新节点的结束元素*** 然后重新走入循环进行对比
+* 如果旧节点的起始元素和新节点的结束元素也不相同的话 则用 ***旧节点的结束元素*** 和 ***新节点的开始元素*** 进行对比 如果相同的话 同样说明进行移动 旧节点的这个元素已经移动到了左边 同样 先进行 **patchVnode** 然后将元素插入到 ***新节点起始元素*** 之前 然后将 ***oldEndIdx*** 减去一位 ***newStartIdx*** 增加一位 一个向前 一个向后 同样利用更新过的下标取得 ***旧节点的结束元素*** 和 ***新节点的开始元素*** 然后重新走入循环进行对比
+* 如果以上对比方式都没找到
+  * 则取出 ***oldVnode*** 元素 利用 **createKeyToOldIdx** 方法 创建出一个 ***map*** 以未处理的元素上面的key值作为属性 以未处理的元素对应的下标作为属性值
+  * 然后判断 ***newStartVnode*** 上的key值是否有 如果有 则取出这个key值在 ***oldVnode*** 上对应的 index 也就是 ***idxInOld*** 然后根据这个 index找到 ***oldVnode*** 对应的元素 然后对比 ***newStartVnode*** 和 找出的这个元素是否相同 如果相同则 进行补丁 然后移动到 ***oldStartVnode*** 之前
+  * 如果在 ***newStartVnode*** 找不到对应的key值 这说明这个元素是个新元素 然后调用 **createEle** 方法 创建Dom 然后插入 ***oldStartVnode*** 之前
+  * 为啥走这里判断都是插入 ***oldStartVnode*** 之前呢？ 走这里的逻辑 就是拿 每次循环过后更新好的 ***newStartVnode*** 的 key 在 ***oldVnode*** 找 如果 **oldVnode*** 上找到了 这个 key 则取得下标 则与之对比进行patch和移动 否则 就认为这个 ***newStartVnode*** 是个新元素 将其插入 ***oldStartVnode*** 之前
+
 
 ```javascript
 function updateChildren (parentElm, oldCh, newCh, insertedVnodeQueue, removeOnly) {
