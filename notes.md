@@ -803,19 +803,21 @@ function patchVnode (
 
 这个阶段主要是对子节点打 **patch** 通过 ***Diff*** 算法 来对比新旧 **vnode** 的区别 然后更新 旧的 **vnode** 完成数据更新<br>
 这里的 ***Diff*** 主要通过 两边向中间进行对比<br>
-定义 ***oldVnode*** 开始的下标 和 ***newVnode*** 开始的下标 分别是 **oldStartIdx** **newStartIdx**<br>
-定义 ***oldVnode*** 结束的下标 以及 开始元素 和 结束元素 分别是 **oldEndIdx** **oldStartVnode** **oldEndVnode**<br>
-定义 ***newVnode*** 结束的下标 以及 开始元素 和 结束元素 分别是 **newEndIdx** **newStartVnode** **newEndVnode**<br>
+定义 ***oldChildren*** 开始的下标 和 ***newChildren*** 开始的下标 分别是 **oldStartIdx** **newStartIdx**<br>
+定义 ***oldChildren*** 结束的下标 以及 开始元素 和 结束元素 分别是 **oldEndIdx** **oldStartVnode** **oldEndVnode**<br>
+定义 ***newChildren*** 结束的下标 以及 开始元素 和 结束元素 分别是 **newEndIdx** **newStartVnode** **newEndVnode**<br>
 * 先从起始位置开始对比 如果 ***旧节点的起始元素*** 和 ***新节点的起始元素*** 相同 则进行 **patchVnode** 并且将 ***oldStartIdx*** 和 ***newStartIdx*** 增加一位 利用更新过的下标取得下一个元素并且赋值为 ***旧节点的起始元素*** ***新节点的起始元素*** 然后重新走入循环进行对比
-* 如果起始位置不同 则继续判断 ***oldVnode*** 和 ***newVnode*** 结束元素 是否相同 如果 ***旧节点的结束元素*** 和 ***新节点的结束元素*** 相同 则同样进行 **patchVnode** 并且将 ***oldEndIdx*** 和 ***newEndIdx*** 减去一位 利用更新过的下标取得上一个元素并且赋值为 ***旧节点的结束元素*** ***新节点的结束元素*** 然后重新走入循环进行对比
+* 如果起始位置不同 则继续判断 ***oldChildren*** 和 ***newChildren*** 结束元素 是否相同 如果 ***旧节点的结束元素*** 和 ***新节点的结束元素*** 相同 则同样进行 **patchVnode** 并且将 ***oldEndIdx*** 和 ***newEndIdx*** 减去一位 利用更新过的下标取得上一个元素并且赋值为 ***旧节点的结束元素*** ***新节点的结束元素*** 然后重新走入循环进行对比
 * 如果新旧节点起始元素和结束元素都不相同的话 则用 ***旧节点的起始元素*** 和 ***新节点的结束元素*** 进行对比 如果相同的话 则说明元素进行了移动 旧节点的这个元素已经移动到了右边 同样 先进行 **patchVnode** 然后获取旧节点结束元素的下个兄弟节点作为参照 将元素插入Dom中（参照之前） 然后将 ***oldStartIdx*** 增加一位 ***newEndIdx***减去一位 因为是旧节点的起始元素和新节点的结束元素做对比 所以一个向后 一个向前 同样利用更新过的下标取得 ***旧节点的起始元素*** 和 ***新节点的结束元素*** 然后重新走入循环进行对比
 * 如果旧节点的起始元素和新节点的结束元素也不相同的话 则用 ***旧节点的结束元素*** 和 ***新节点的开始元素*** 进行对比 如果相同的话 同样说明进行移动 旧节点的这个元素已经移动到了左边 同样 先进行 **patchVnode** 然后将元素插入到 ***新节点起始元素*** 之前 然后将 ***oldEndIdx*** 减去一位 ***newStartIdx*** 增加一位 一个向前 一个向后 同样利用更新过的下标取得 ***旧节点的结束元素*** 和 ***新节点的开始元素*** 然后重新走入循环进行对比
 * 如果以上对比方式都没找到
-  * 则取出 ***oldVnode*** 元素 利用 **createKeyToOldIdx** 方法 创建出一个 ***map*** 以未处理的元素上面的key值作为属性 以未处理的元素对应的下标作为属性值
-  * 然后判断 ***newStartVnode*** 上的key值是否有 如果有 则取出这个key值在 ***oldVnode*** 上对应的 index 也就是 ***idxInOld*** 然后根据这个 index找到 ***oldVnode*** 对应的元素 然后对比 ***newStartVnode*** 和 找出的这个元素是否相同 如果相同则 进行补丁 然后移动到 ***oldStartVnode*** 之前
+  * 则取出 ***oldChildren*** 元素 利用 **createKeyToOldIdx** 方法 创建出一个 ***map*** 以未处理的元素上面的key值作为属性 以未处理的元素对应的下标作为属性值
+  * 然后判断 ***newStartVnode*** 上的key值是否有 如果有 则取出这个key值在 ***oldChildren*** 上对应的 index 也就是 ***idxInOld*** 然后根据这个 index找到 ***oldChildren*** 对应的元素 然后对比 ***newStartVnode*** 和 找出的这个元素是否相同 如果相同则 进行补丁 然后移动到 ***oldStartVnode*** 之前
   * 如果在 ***newStartVnode*** 找不到对应的key值 这说明这个元素是个新元素 然后调用 **createEle** 方法 创建Dom 然后插入 ***oldStartVnode*** 之前
-  * 为啥走这里判断都是插入 ***oldStartVnode*** 之前呢？ 走这里的逻辑 就是拿 每次循环过后更新好的 ***newStartVnode*** 的 key 在 ***oldVnode*** 找 如果 **oldVnode*** 上找到了 这个 key 则取得下标 则与之对比进行patch和移动 否则 就认为这个 ***newStartVnode*** 是个新元素 将其插入 ***oldStartVnode*** 之前
-
+  * 为啥走这里判断都是插入 ***oldStartVnode*** 之前呢？ 走这里的逻辑 就是拿 每次循环过后更新好的 ***newStartVnode*** 的 key 在 ***oldChildren*** 找 如果 ***oldChildren*** 上找到了 这个 key 则取得下标 则与之对比进行patch和移动 否则 就认为这个 ***newStartVnode*** 是个新元素 将其插入 ***oldStartVnode*** 之前
+* 如果 **oldStartIdx > oldEndIdx** 说明 ***oldChildren*** 已经比 ***newChildren*** 先循环完了 说明 ***oldChildren*** 的长度要小于 ***newChildren*** 说明 ***newChildren*** 剩下的元素都是要新增的
+* 如果 **newStartIdx > newEndIdx** 说明 ***newChildren*** 已经比 ***oldChildren*** 先循环完了 说明 ***newChildren*** 的长度要小于
+***oldChildren*** 说明 ***oldChildren*** 剩下的元素都是要移除的
 
 ```javascript
 function updateChildren (parentElm, oldCh, newCh, insertedVnodeQueue, removeOnly) {
@@ -906,5 +908,214 @@ function sameVnode (a, b) {
       )
     )
   )
+}
+```
+
+# nextTick
+
+Vue里的Dom更新是异步 数据改变了并不会立即重新渲染 就是不会立即调用 生成好的 **render** 函数 这样的好处是 如果一个 ***Watcher***被多次触发 只会被推入到事件队列中一次
+
+
+* 当数据更新的时候 会调用 **dep.notify** 去进行通知
+* 然后将依赖拷贝一份出来 ***subs*** 其实里面维护的就是 ***Watcher***
+* 通过循环依赖 调用每个 ***Watcher*** 上面的 **update** 方法
+* **update** 主要进行几个判断 如果是惰性的 修改 dirty 的值 如果是同步的话 直接调用 ***Watcher*** 上的 **run** 方法重新渲染 否则就 执行 **queueWatcher** 方法
+* **queueWatcher** 里面维护 ***Watcher*** 的队列 **queue**
+* 判断如果队列不在冲洗中（队列不在执行中） 里面调用 **nextTick** 方法 传入一个默认的 回调函数 **flushSchedulerQueue**
+* **nextTick** 方法 将传入的回调函数 推入到回调队列中 ***callbacks***
+* 判断如果队列不在冲洗中（队列不在执行中） 则调用 **timerFunc** 方法
+* ***timerFunc*** 方法 根据浏览器不同的能力 赋予不同的方法 最终都执行 **flushCallbacks** 方法 这个方法就是用来执行 回调队列里的 回调函数的
+* **flushCallbacks** 将更新的回调函数 拷贝一份 然后循环调用每个回调函数 更新就是调用 **flushSchedulerQueue** 方法 因为之前就是 将这个回调函数 推入 回调队列中
+* **flushSchedulerQueue** 方法 目的就是调用 ***Watcher*** 上面的 **run** 方法 去重新调用 **render** 函数 重新对页面进行渲染
+
+所以就不难理解 ***nextTick*** 的原理了 调用 nextTick 将其回调函数直接 push 回调队列里 然后 通过 **flushCallbacks** 方法 对回调队列里的回调函数依次循环调用的时候 就会执行到 我们传入的 回调函数 并且这个 回调函数在 Dom异步更新之后 所以我们可以立即获取更新好的Dom了 形式大致如下
+```javascript
+callbacks = [
+  flushSchedulerQueue, // 渲染页面的调度函数
+  () => {
+    console.log(vm.$el.innerHTML)
+  }, // 我们手动nextTick传入的回调函数
+]
+```
+
+```javascript
+Dep.prototype.notify = function notify () {
+  // stabilize the subscriber list first
+  var subs = this.subs.slice();
+  if (!config.async) {
+    // subs aren't sorted in scheduler if not running async
+    // we need to sort them now to make sure they fire in correct
+    // order
+    subs.sort(function (a, b) { return a.id - b.id; });
+  }
+  for (var i = 0, l = subs.length; i < l; i++) {
+    subs[i].update();
+  }
+};
+```
+```javascript
+Watcher.prototype.update = function update () {
+  /* istanbul ignore else */
+  if (this.lazy) {
+    this.dirty = true;
+  } else if (this.sync) {
+    this.run();
+  } else {
+    queueWatcher(this);
+  }
+};
+```
+```javascript
+function queueWatcher (watcher) {
+  var id = watcher.id;
+  if (has[id] == null) {
+    has[id] = true;
+    if (!flushing) {
+      queue.push(watcher);
+    } else {
+      // if already flushing, splice the watcher based on its id
+      // if already past its id, it will be run next immediately.
+      var i = queue.length - 1;
+      while (i > index && queue[i].id > watcher.id) {
+        i--;
+      }
+      queue.splice(i + 1, 0, watcher);
+    }
+    // queue the flush
+    if (!waiting) {
+      waiting = true;
+
+      if (!config.async) {
+        flushSchedulerQueue();
+        return
+      }
+      nextTick(flushSchedulerQueue);
+    }
+  }
+}
+```
+```javascript
+function nextTick (cb, ctx) {
+  var _resolve;
+  callbacks.push(function () {
+    if (cb) {
+      try {
+        cb.call(ctx);
+      } catch (e) {
+        handleError(e, ctx, 'nextTick');
+      }
+    } else if (_resolve) {
+      _resolve(ctx);
+    }
+  });
+  if (!pending) {
+    pending = true;
+    timerFunc();
+  }
+  // $flow-disable-line
+  if (!cb && typeof Promise !== 'undefined') {
+    return new Promise(function (resolve) {
+      _resolve = resolve;
+    })
+  }
+}
+```
+```javascript
+if (typeof Promise !== 'undefined' && isNative(Promise)) {
+  var p = Promise.resolve();
+  timerFunc = function () {
+    p.then(flushCallbacks);
+    
+    if (isIOS) { setTimeout(noop); }
+  };
+  isUsingMicroTask = true;
+} else if (!isIE && typeof MutationObserver !== 'undefined' && (
+  isNative(MutationObserver) ||
+  // PhantomJS and iOS 7.x
+  MutationObserver.toString() === '[object MutationObserverConstructor]'
+)) {
+  
+  var counter = 1;
+  var observer = new MutationObserver(flushCallbacks);
+  var textNode = document.createTextNode(String(counter));
+  observer.observe(textNode, {
+    characterData: true
+  });
+  timerFunc = function () {
+    counter = (counter + 1) % 2;
+    textNode.data = String(counter);
+  };
+  isUsingMicroTask = true;
+} else if (typeof setImmediate !== 'undefined' && isNative(setImmediate)) {
+  
+  timerFunc = function () {
+    setImmediate(flushCallbacks);
+  };
+} else {
+
+  timerFunc = function () {
+    setTimeout(flushCallbacks, 0);
+  };
+}
+```
+```javascript
+function flushCallbacks () {
+  pending = false;
+  var copies = callbacks.slice(0);
+  callbacks.length = 0;
+  for (var i = 0; i < copies.length; i++) {
+    copies[i]();
+  }
+}
+```
+```javascript
+function flushSchedulerQueue () {
+  currentFlushTimestamp = getNow();
+  flushing = true;
+  var watcher, id;
+
+  queue.sort(function (a, b) { return a.id - b.id; });
+
+  for (index = 0; index < queue.length; index++) {
+    watcher = queue[index];
+    if (watcher.before) {
+      // 调用 beforeUpdate 函数
+      watcher.before();
+    }
+    id = watcher.id;
+    has[id] = null;
+    watcher.run();
+    // in dev build, check and stop circular updates.
+    if (has[id] != null) {
+      circular[id] = (circular[id] || 0) + 1;
+      if (circular[id] > MAX_UPDATE_COUNT) {
+        warn(
+          'You may have an infinite update loop ' + (
+            watcher.user
+              ? ("in watcher with expression \"" + (watcher.expression) + "\"")
+              : "in a component render function."
+          ),
+          watcher.vm
+        );
+        break
+      }
+    }
+  }
+
+  // keep copies of post queues before resetting state
+  var activatedQueue = activatedChildren.slice();
+  var updatedQueue = queue.slice();
+
+  resetSchedulerState();
+
+  // call component updated and activated hooks
+  callActivatedHooks(activatedQueue);
+  callUpdatedHooks(updatedQueue);
+
+  // devtool hook
+  /* istanbul ignore if */
+  if (devtools && config.devtools) {
+    devtools.emit('flush');
+  }
 }
 ```

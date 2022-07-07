@@ -33,11 +33,14 @@
         handleClick() {
           if (this.txt === '1234') {
             this.txt = '5678'
-            this.list = [{name: 'ls', id: 2},{name: 'ww', id: 3},{name: 'qwer', id: 9}]
-          } else {
+            console.log(vm.$el.innerHTML) 
             this.$nextTick(() => {
-              this.txt = '1234'
+              console.log(vm.$el.innerHTML) 
             })
+            // this.list = [{name: 'ls', id: 2},{name: 'ww', id: 3},{name: 'qwer', id: 9}]
+          } else {
+            this.txt = '1234'
+            
           }
         }
       },
