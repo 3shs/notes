@@ -928,7 +928,7 @@ Vue里的Dom更新是异步 数据改变了并不会立即重新渲染 就是不
 * **flushCallbacks** 将更新的回调函数 拷贝一份 然后循环调用每个回调函数 更新就是调用 **flushSchedulerQueue** 方法 因为之前就是 将这个回调函数 推入 回调队列中
 * **flushSchedulerQueue** 方法 目的就是调用 ***Watcher*** 上面的 **run** 方法 去重新调用 **render** 函数 重新对页面进行渲染
 
-所以就不难理解 ***nextTick*** 的原理了 调用 nextTick 将其回调函数直接 push 回调队列里 然后 通过 **flushCallbacks** 方法 对回调队列里的回调函数依次循环调用的时候 就会执行到 我们传入的 回调函数 并且这个 回调函数在 Dom异步更新之后 所以我们可以立即获取更新好的Dom了 形式大致如下
+所以就不难理解 ***nextTick*** 的原理了 调用 nextTick 将其回调函数直接 push 回调队列里 然后 通过 **flushCallbacks** 方法 对回调队列里的回调函数依次循环调用的时候 就会执行到 我们手动调用的nextTick传入的 回调函数 并且这个 回调函数在 Dom异步更新之后 所以我们可以立即获取更新好的Dom了 形式大致如下
 ```javascript
 callbacks = [
   flushSchedulerQueue, // 渲染页面的调度函数
