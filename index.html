@@ -8,14 +8,23 @@
 </head>
 <body>
   <div id="app">
-    <h1 @click="handleClick">{{txt}}</h1>
 
-    <div v-for="item in list" :key="item.id">{{item.name}}</div>
+    <child1 />
   </div>
   <script src="./js/index.js"></script>
   <script>
+    var child1 = {
+      template: '<div>组件1:<input type="text"/></div>',
+    }
+    var child2 = {
+      template: '<div>组件2:<input type="text"/></div>'
+    }
     let vm = new Vue({
       el: '#app',
+      components: {
+        child1,
+        child2,
+      },
       props: {
         msg: {
           type: String,
@@ -25,7 +34,8 @@
       data() {
         return {
           txt: '1234',
-          list: [{name: 'zs', id: 1},{name: 'ls', id: 2},{name: 'ww', id: 3}]
+          list: [{name: 'zs', id: 1},{name: 'ls', id: 2},{name: 'ww', id: 3}],
+          chooseComponent: 'child1',
         }
       },
 
@@ -42,6 +52,9 @@
             this.txt = '1234'
             
           }
+        },
+        switchComp(component) {
+          this.chooseComponent = component;
         }
       },
     })
@@ -61,6 +74,62 @@
     let render = new Function('with(this) { _c(_v()), _v() }')
 
     render.call(obj)
+
+
+
+
+
+    const p = new Promise((resolve, reject) => {
+
+      setTimeout(() => {
+        resolve(1)
+      }, 1000)
+    })
+
+
+    p.then(res => {
+      // console.log('res', res)
+    })
+
+
+
+    
+    // 乞丐版 promise
+    
+    function MyPromise(callback) {
+
+      this.status = 'PENDING'
+      this.value = undefined
+      this.queue = []
+      callback(this.resolve.bind(this))
+
+    }
+
+    MyPromise.prototype.resolve = function(val) {
+      this.status = 'FULFILLED'
+      this.value = val
+      cb = this.queue.shift()
+      cb(val)
+    }
+
+    MyPromise.prototype.then = function(fn) {
+      if (this.status === 'FULFILLED') {
+        fn(this.value)
+      } else if (this.status === 'PENDING') {
+        this.queue.push(fn)
+      }
+    }
+
+    const mp = new MyPromise((resolve, reject) => {
+      // resolve(1)
+      setTimeout(() => {
+        resolve(1)
+      }, 1000);
+    })
+
+    mp.then(res => {
+      console.log('res', res)
+    })
 
   </script>
 </body>
