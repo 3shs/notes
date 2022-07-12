@@ -1,16 +1,17 @@
-# 模板编译
+># 模板编译
 
-## pase函数
+>## pase函数
 
 里面维护了一个 ***stack***  然后调用 ***parseHTMl*** 并且传入 **template**模板 和 **start** 、**end** 、**chars** 、**comment** 四个方法
 
-### parseHTML函数
+>### parseHTML函数
 
 里面也维护了一个 ***stack***  以及游标 ***index*** 循环解析模板 用 `template.indexOf('<')` 来匹配 匹配到了 ***为0*** 先后判断分别是 是否为 ***comment*** 、***条件注释*** 、***Doctype*** 、***End Tag*** 、***Start Tag***
 
-#### 解析Start Tag
+>#### 解析Start Tag
 
 调用 **parseStartTag** 这个方法主要匹配标签的开始到结束以及里面所有的属性 `<div id="app">` 顺序依次是 `<div` 、`id="app"` 、`>` 通过 **advance** 方法去记录游标 ***index*** 的位置并且通过 **subString** 来截取字符串 再通过 **while** 循环匹配 **attr** 直到属性全部匹配完匹配到 `>` 结束 最终得到一个 ***match*** 例如：
+
 ```javascript
   {
     attrs: [
@@ -23,6 +24,7 @@
   }
 ```
 然后通过 **handleStartTag** 方法处理一下 ***match*** 得到例如： `attr = [{name: 'id', value: 'app', start: 5, end: 13}]` 这样的属性数组
+
 ```javascript
   var l = match.attrs.length
   var attrs = new Array(l)
@@ -43,6 +45,7 @@
   }
 ```
 然后 **push** 到 **parseHTML** 的 ***stack*** 
+
 ```javascript
   [
     {
@@ -62,6 +65,7 @@
   ]
 ```
 然后再调用 **parseHTML** 传进来的 **start** 的方法创建 ***AST*** element 同时，在这个方法里解析 ***v-pre*** 、***v-for*** 、***v-once*** 最终得到 ***AST*** element 例如：
+
 ```javascript
   {
     attrsList: [
@@ -90,6 +94,7 @@
   }
 ```
 然后做个判断
+
 ```javascript
   // 是否有root的根节点
   if (!root) {
@@ -137,9 +142,10 @@
     }
   ]
 ```
-#### 解析 v-for
+>#### 解析 v-for
 
 通过 **processFor** 方法来处理 ***v-for*** 然后通过 **processFor** 里的 **getAndRemoteAttr** 方法 得到 ***v-for*** 属性的值 例如：`item in list` 然后通过循环得到 ***v-for*** 在 **attrList** 的位置 然后进行删除
+
 ```javascript
 function getAndRemoveAttr (
   el,
@@ -163,6 +169,7 @@ function getAndRemoveAttr (
 }
 ```
 然后将得到的值 `item in list` 传给 **parseFor** 这个方法 里面通过正则匹配 得到 **inMatch** ：`["item in list", "item", "list"]` 最终得到一个 ***res*** 
+
 ```javascript
 {
   alias: "item",
@@ -170,6 +177,7 @@ function getAndRemoveAttr (
 }
 ```
 然后通过 **extend** 方法 将这个 ***res*** 合并到当前的 **element** 的 ***AST*** 上 最终得到合并好的 ***AST***
+
 ```javascript
 {
   alias: "item",
@@ -190,12 +198,14 @@ function getAndRemoveAttr (
 ```
 
 
-#### 解析文本
+>#### 解析文本
 
 从解析的当前位置到下一个 `<` 如果 `indexOf('<')` 大于0 说明之间是文本内容
-##### 解析{{}}
+
+>##### 解析{{}}
 
 通过 **parseText** 方法最终得到 这样的 res 其中有个 **parseFilters** 解析过滤器
+
 ```javascript
 {
   expression: "_s(txt)",
@@ -221,18 +231,20 @@ function getAndRemoveAttr (
   type: 2
 }
 ```
-#### 解析End Tag
+>#### 解析End Tag
 
-如匹配到闭合标签 随后将执行 **parseEndTag** 方法 从后向前循环 然后调用 **parseHTML** 传进来的 **end** 方法 然后通过 ``stack.length -= 1`` pop掉 **parse** 方法里的最新解析到的 ***AST*** 元素 最后调用 **closeElement** 方法 里面通过调用 **processElement** 方法 然后通过其里面的 **processKey**, **processRef**, **processSlotContent**, **processSlotOutlet**, **processComponent**, **processAttrs** 方法分别对元素进行 ***key*** , ***Ref***, ***slot***, ***componnet(:is)***, ***Attr*** 进行处理 然后将处理好的 ***element*** 进行
+如匹配到闭合标签 随后将执行 **parseEndTag** 方法 从后向前循环 然后调用 **parseHTML** 传进来的 **end** 方法 然后通过 `stack.length -= 1` pop掉 **parse** 方法里的最新解析到的 ***AST*** 元素 最后调用 **closeElement** 方法 里面通过调用 **processElement** 方法 然后通过其里面的 **processKey**, **processRef**, **processSlotContent**, **processSlotOutlet**, **processComponent**, **processAttrs** 方法分别对元素进行 ***key*** , ***Ref***, ***slot***, ***componnet(:is)***, ***Attr*** 进行处理 然后将处理好的 ***element*** 进行
+
 ```javascript
 currentParent.children.push(element)
 element.parent = currentParent
 ```
 然后再将 **parseHTML** 的 ***stack*** 通过 `stack.length = pos` pop掉最新的解析标签
 
-# AST生成render函数
+># AST生成render函数
 
 调用 **generate** 方法 传入解析好的 ***AST*** 方法内部调用 **genElement** 方法 传入 ***AST*** 和 ***option*** 
+
 ```javascript
   { attrs: {"id": "app"} }
 
@@ -241,9 +253,10 @@ element.parent = currentParent
   ]
 
 ```
-## genElement函数
+>## genElement函数
 
 通过各种判断来决定生成什么
+
 ```javascript
 function genElement (el, state) {
   if (el.parent) {
@@ -285,6 +298,7 @@ function genElement (el, state) {
 }
 ```
 在 **component or element** 调用 **genData$2**方法 处理标签上的属性 得到 ***data***
+
 ```javascript
 "{
   attrs: {
@@ -293,6 +307,7 @@ function genElement (el, state) {
 }"
 ```
 然后调用 **genChildren** 生成子元素 这里面有个 **genNode** 方法 genNode方法针对不同的元素去调用生成不同元素的方法
+
 ```javascript
 function genChildren (
   el,
@@ -335,6 +350,7 @@ function genNode (node, state) {
 }
 ```
 这里基本逻辑是通过不断的循环元素 父元素 -> 子元素 -> 子子元素 -> 直到所有子元素循环完毕 结束 得到一个 ***code***
+
 ```javascript
 code = "_c(
   'div', 
@@ -356,11 +372,12 @@ code = "_c(
   2
 )"
 ```
-然后利用code拼接一个 **with** 函数的字符串 再通过 ```new Function(code)``` 得到一个 ***render*** 函数
+然后利用code拼接一个 **with** 函数的字符串 再通过 `new Function(code)` 得到一个 ***render*** 函数
 
-# mount阶段
+># mount阶段
 
 在挂载阶段之前 先 **callHook** 一下 **beforeMount** 的函数 然后给 **updateComponent** 赋值
+
 ```javascript
 updateComponent = function () {
   vm._update(vm._render(), hydrating)
@@ -370,6 +387,7 @@ updateComponent = function () {
 vnode = render.call(vm._renderProxy, vm.$createElement);
 ```
 然后进入 **Watcher** 将 **updateComponent** 传给 **Watcher** Watcher 经过一系列初始化 然后调用 **updateComponent** 调用 **_render** 函数 然后调用 利用 ***code*** 生成好的 **render** 函数 并且传入 **createElement** 方法 通过 读取 ***_c*** (被 proxy)  调用 **createElement** 然后 **createElement** 调用 **_createElement** 生成完整的 ***vnode***
+
 ```javascript
 function VNode(
   tag,
@@ -408,6 +426,7 @@ function VNode(
 }
 ```
 然后传入 **vm._render** 生成好的 ***vnode*** 给 **vm._update** 这里分为两种情况 如果之前已经有 ***vm._vnode*** 那就进行 **updates** 否则就是属于第一次挂载
+
 ```javascript
 Vue.prototype._update = function (vnode, hydrating) {
   var vm = this;
@@ -440,9 +459,10 @@ Vue.prototype._update = function (vnode, hydrating) {
   // updated in a parent's updated hook.
 }
 ```
-## 第一次挂载 （initial render）
+>## 第一次挂载 （initial render）
 
 第一次挂载 进行 **patch** 的时候 传递的 ***oldVnode*** 就是真实的Dom **vm.$el** ***vnode*** 就是通过 **_render** 方法生成的 ***vnode*** 
+
 ```javascript
 function patch (oldVnode, vnode, hydrating, removeOnly) {
   if (isUndef(vnode)) {
@@ -554,7 +574,7 @@ function patch (oldVnode, vnode, hydrating, removeOnly) {
   return vnode.elm
 }
 ```
-### createElm
+>### createElm
 
 这个方法主要是将 ***vnode*** 转为 真实的 Dom 结构<br>
 createElm 主要接收 虚拟 Dom 对象 和 当前虚拟 Dom 父节点 以及 虚拟Dom 上的 Ele属性（真实的Dom） 就是形参中的 refElm<br>
@@ -563,7 +583,8 @@ createElm 主要接收 虚拟 Dom 对象 和 当前虚拟 Dom 父节点 以及 �
 然后调用 **createChildren** 在 createChildren 里面继续调用 **createElm** 方法创建元素<br>
 在 **createChildren** 的时候 会先调用 **checkDuplicateKeys** 方法 查看是否有相同的key值<br>
 基本逻辑就是递归循环调用 将 ***vnode*** 一一对应的节点 转成 真实的 Dom 结构<br>
-createElm 方法 主要就是创建 元素节点 注释节点 和 文本节点 判断依次顺序为<br> 
+createElm 方法 主要就是创建 元素节点 注释节点 和 文本节点 判断依次顺序为<br>
+
 ``` javascript
 if (isDef(tag)) { 
 
@@ -666,10 +687,11 @@ function createChildren (vnode, children, insertedVnodeQueue) {
   }
 }
 ```
-#### invokeCreateHooks
+>#### invokeCreateHooks
 
 这个方法主要用来处理 ***vnode*** 上面 ***data*** 属性 cbs.create 里面主要存放了 一些 update 标签上的属性的方法
 同时，标签上写的 方法 也是在这里 通过 updateDOMListeners 来注册的
+
 ```javascript
 cbs.create = [
   updateAttrs(oldVnode, vnode),
@@ -695,7 +717,7 @@ function invokeCreateHooks (vnode, insertedVnodeQueue) {
   }
 }
 ```
-##### updateDOMListeners
+>##### updateDOMListeners
 
 基本原理还是利用 **addEventListener** 来注册事件<br>
 在这个方法里面拿到 **oldVnode** 和 **vnode** 上面 data 上面的 on 属性 然后传入 **updateListeners** 这个方法<br>
@@ -705,14 +727,14 @@ function invokeCreateHooks (vnode, insertedVnodeQueue) {
 在 **add** 方法里 通过 **addEventListener** 注册事件<br>
 最后移除掉 oldVnode 上面的 事件<br>
 
-# update 阶段
+># update 阶段
 
-## patchVnode
+>## patchVnode
 
 该方法主要是对node节点进行 **pathc** 进行打补丁<br>
 基本逻辑梳理<br>
 如果 **oldVnode** 和 **vnode** 相等 则直接退出<br>
-如果 **oldVnode** 和 **vnode** 是静态节点 则直接退出 ***静态节点指的的类似于 ```<div>我是静态的</div>``` 里面没有任何变量的值***<br>
+如果 **oldVnode** 和 **vnode** 是静态节点 则直接退出 ***静态节点指的的类似于 `<div>我是静态的</div>` 里面没有任何变量的值***<br>
 * 如果 **vnode** 里面没有 **text** 属性的值 则说明是元素节点<br>
   * 判断 **oldVnode** 和 **vnode** 是否都有子节点 如果有
     * 判断 **oldVnode** 下的子节点 和 **vnode** 下的子节点 是否相同 如果不同 则通过 **updateChildren** 方法去更新子节点（***Diff***）
@@ -799,7 +821,7 @@ function patchVnode (
 }
 ```
 
-## Diff
+>## Diff
 
 这个阶段主要是对子节点打 **patch** 通过 ***Diff*** 算法 来对比新旧 **vnode** 的区别 然后更新 旧的 **vnode** 完成数据更新<br>
 这里的 ***Diff*** 主要通过 两边向中间进行对比<br>
@@ -911,7 +933,7 @@ function sameVnode (a, b) {
 }
 ```
 
-# nextTick
+># nextTick
 
 Vue里的Dom更新是异步 数据改变了并不会立即重新渲染 就是不会立即调用 生成好的 **render** 函数 这样的好处是 如果一个 ***Watcher***被多次触发 只会被推入到事件队列中一次
 
@@ -929,6 +951,7 @@ Vue里的Dom更新是异步 数据改变了并不会立即重新渲染 就是不
 * **flushSchedulerQueue** 方法 目的就是调用 ***Watcher*** 上面的 **run** 方法 去重新调用 **render** 函数 重新对页面进行渲染
 
 所以就不难理解 ***nextTick*** 的原理了 调用 nextTick 将其回调函数直接 push 回调队列里 然后 通过 **flushCallbacks** 方法 对回调队列里的回调函数依次循环调用的时候 就会执行到 我们手动调用的nextTick传入的 回调函数 并且这个 回调函数在 Dom异步更新之后 所以我们可以立即获取更新好的Dom了 形式大致如下
+
 ```javascript
 callbacks = [
   flushSchedulerQueue, // 渲染页面的调度函数
@@ -1119,3 +1142,338 @@ function flushSchedulerQueue () {
   }
 }
 ```
+
+># 解析组件
+
+在解析组件的时候 首先也是把它当做 普通标签来解析 但是在创建虚拟Dom的时候 会利用 `isHTMLTag` 方法 来判断 这个标签是不是 普通的HTML标签 先利用 **resolveAsset** 方法 拿到 组件里 ***components*** 里面的配置 然后通过 这个 tag 拿到对应的组件
+
+```javascript
+components: {
+  componentA,
+  componentB
+}
+
+components[tag] // 拿到对应的配置
+```
+然后通过 **createComponent** 方法来创建组件的vnode
+这个方法主要包括三大部分
+* 构造子类构造函数
+  * 拿到 vm 上面的 $options 上 _base 配置 然后调用上面的 **extend** 方法 去构建一个 Vue 子类 **Sub** 并返回
+  * 在 **extend** 方法里 首先拿到我们写的组件内的 一些 options 就一些
+
+  ```javascript
+  name: '',
+  data() {
+    retrun {
+
+    }
+  },
+  methods: {},
+  ...
+  ```
+  * 然后将 this (Vue) 赋给 **Super**
+  * 将构造函数 **VueComponent(options)** 赋值给 **Sub** 并在里面调用 `this._init(options)` 方法
+  * 然后利用原型继承的方式 创建 **Sub** 的 prototype  然后 将原型的 constructor 属性 指向 构造函数 **Sub**
+
+  ```javascript
+  Sub.prototype = Object.create(Super.prototype)
+  Sub.prototype.constructor = Sub
+  ```
+  * 然后将我们组件里写的一些 options 和 Vue 自带的 options 通过 **mergeOptions** 方法去进行合并（策略模式） 然后赋值给 **Sub.options**
+
+  ```javascript
+  // Vue 自带的
+  {
+    components: {
+      KeepAlive,
+      Transition,
+      TransitionGroup
+    },
+    directives: {
+      model,
+      show
+    },
+    _base,
+    ...
+  }
+  ```
+  * 然后在 **Sub** 上添加一些 属性和全局的API 最后对 **Sub** 进行缓存 并 返回出去
+
+  ```javascript
+  function initExtend (Vue) {
+    /**
+    * Each instance constructor, including Vue, has a unique
+    * cid. This enables us to create wrapped "child
+    * constructors" for prototypal inheritance and cache them.
+    */
+    Vue.cid = 0;
+    var cid = 1;
+
+    /**
+    * Class inheritance
+    */
+    Vue.extend = function (extendOptions) {
+      extendOptions = extendOptions || {};
+      var Super = this;
+      var SuperId = Super.cid;
+      var cachedCtors = extendOptions._Ctor || (extendOptions._Ctor = {});
+      if (cachedCtors[SuperId]) {
+        return cachedCtors[SuperId]
+      }
+
+      var name = extendOptions.name || Super.options.name;
+      if (name) {
+        validateComponentName(name);
+      }
+
+      var Sub = function VueComponent (options) {
+        this._init(options);
+      };
+      Sub.prototype = Object.create(Super.prototype);
+      Sub.prototype.constructor = Sub;
+      Sub.cid = cid++;
+      Sub.options = mergeOptions(
+        Super.options,
+        extendOptions
+      );
+      Sub['super'] = Super;
+
+      // For props and computed properties, we define the proxy getters on
+      // the Vue instances at extension time, on the extended prototype. This
+      // avoids Object.defineProperty calls for each instance created.
+      if (Sub.options.props) {
+        initProps$1(Sub);
+      }
+      if (Sub.options.computed) {
+        initComputed$1(Sub);
+      }
+
+      // allow further extension/mixin/plugin usage
+      Sub.extend = Super.extend;
+      Sub.mixin = Super.mixin;
+      Sub.use = Super.use;
+
+      // create asset registers, so extended classes
+      // can have their private assets too.
+      ASSET_TYPES.forEach(function (type) {
+        Sub[type] = Super[type];
+      });
+      // enable recursive self-lookup
+      if (name) {
+        Sub.options.components[name] = Sub;
+      }
+
+      // keep a reference to the super options at extension time.
+      // later at instantiation we can check if Super's options have
+      // been updated.
+      Sub.superOptions = Super.options;
+      Sub.extendOptions = extendOptions;
+      Sub.sealedOptions = extend({}, Sub.options);
+
+      // cache constructor
+      cachedCtors[SuperId] = Sub;
+      return Sub
+    };
+  }
+  ```
+* 安装组件的钩子函数
+  * 这里主要是 提供组件 vnode 在 patch 流程中 暴露对外的钩子函数 以便Vue做一些额外的事
+  * 主要有这几个钩子函数 `[ init, prepatch, insert, destroy ]`
+  * 最后 vnode data 属性里 就会有 这几个 钩子函数了
+
+  ```javascript
+  function installComponentHooks (data) {
+    var hooks = data.hook || (data.hook = {});
+    for (var i = 0; i < hooksToMerge.length; i++) {
+      var key = hooksToMerge[i];
+      var existing = hooks[key];
+      var toMerge = componentVNodeHooks[key];
+      if (existing !== toMerge && !(existing && existing._merged)) {
+        hooks[key] = existing ? mergeHook$1(toMerge, existing) : toMerge;
+      }
+    }
+  }
+  ```
+* 生成组件的vnode
+  * 通过 new Vnode 生成组件的 vnode 节点
+
+```javascript
+function createComponent (
+  Ctor,
+  data,
+  context,
+  children,
+  tag
+) {
+  if (isUndef(Ctor)) {
+    return
+  }
+
+  var baseCtor = context.$options._base;
+
+  // plain options object: turn it into a constructor
+  if (isObject(Ctor)) {
+    Ctor = baseCtor.extend(Ctor);
+  }
+
+  // if at this stage it's not a constructor or an async component factory,
+  // reject.
+  if (typeof Ctor !== 'function') {
+    {
+      warn(("Invalid Component definition: " + (String(Ctor))), context);
+    }
+    return
+  }
+
+  // async component
+  var asyncFactory;
+  if (isUndef(Ctor.cid)) {
+    asyncFactory = Ctor;
+    Ctor = resolveAsyncComponent(asyncFactory, baseCtor);
+    if (Ctor === undefined) {
+      // return a placeholder node for async component, which is rendered
+      // as a comment node but preserves all the raw information for the node.
+      // the information will be used for async server-rendering and hydration.
+      return createAsyncPlaceholder(
+        asyncFactory,
+        data,
+        context,
+        children,
+        tag
+      )
+    }
+  }
+
+  data = data || {};
+
+  // resolve constructor options in case global mixins are applied after
+  // component constructor creation
+  resolveConstructorOptions(Ctor);
+
+  // transform component v-model data into props & events
+  if (isDef(data.model)) {
+    transformModel(Ctor.options, data);
+  }
+
+  // extract props
+  var propsData = extractPropsFromVNodeData(data, Ctor, tag);
+
+  // functional component
+  if (isTrue(Ctor.options.functional)) {
+    return createFunctionalComponent(Ctor, propsData, data, context, children)
+  }
+
+  // extract listeners, since these needs to be treated as
+  // child component listeners instead of DOM listeners
+  var listeners = data.on;
+  // replace with listeners with .native modifier
+  // so it gets processed during parent component patch.
+  data.on = data.nativeOn;
+
+  if (isTrue(Ctor.options.abstract)) {
+    // abstract components do not keep anything
+    // other than props & listeners & slot
+
+    // work around flow
+    var slot = data.slot;
+    data = {};
+    if (slot) {
+      data.slot = slot;
+    }
+  }
+
+  // install component management hooks onto the placeholder node
+  installComponentHooks(data);
+
+  // return a placeholder vnode
+  var name = Ctor.options.name || tag;
+  var vnode = new VNode(
+    ("vue-component-" + (Ctor.cid) + (name ? ("-" + name) : '')),
+    data, undefined, undefined, undefined, context,
+    { Ctor: Ctor, propsData: propsData, listeners: listeners, tag: tag, children: children },
+    asyncFactory
+  );
+
+  return vnode
+}
+```
+
+># 生成组件
+
+生成组件的时候 同样要将组件的 vnode 转成真实的 dom 所以也需要调用 **createElm** 方法（如上）</br>
+* 在这个方法里 首先调用一下 **createComponent** 方法 并且如果是组件 在这个方法里执行对应的组件逻辑 最后返回是否是组件的布尔值
+
+  ```javascript
+  //createElm 判断并调用createComponent 
+  if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
+    return
+  }
+  ```
+* **createComponent** 方法里主要判断 vnode **data** 属性里有没有组件的钩子函数 如果有 则直接调用 组件的钩子函数 **init**
+
+  ```javascript
+  //执行完createComponent 如果是组件 直接 return 否则继续执行 createElm
+  function createComponent (vnode, insertedVnodeQueue, parentElm, refElm) {
+    var i = vnode.data;
+    if (isDef(i)) {
+      var isReactivated = isDef(vnode.componentInstance) && i.keepAlive;
+      if (isDef(i = i.hook) && isDef(i = i.init)) {
+        i(vnode, false /* hydrating */);
+      }
+      // after calling the init hook, if the vnode is a child component
+      // it should've created a child instance and mounted it. the child
+      // component also has set the placeholder vnode's elm.
+      // in that case we can just return the element and be done.
+      if (isDef(vnode.componentInstance)) {
+        initComponent(vnode, insertedVnodeQueue);
+        insert(parentElm, vnode.elm, refElm);
+        if (isTrue(isReactivated)) {
+          reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm);
+        }
+        return true
+      }
+    }
+  }
+  ```
+* **init**方法 主要调用 **createComponentInstanceForVnode** 方法对 组件进行一些初始化 最后调用 $mount方法 进行挂载 对 template 里面东西进行模板解析 然后就和 模板解析下面的过程一样了
+
+  ```javascript
+  function init (vnode, hydrating) {
+    if (
+      vnode.componentInstance &&
+      !vnode.componentInstance._isDestroyed &&
+      vnode.data.keepAlive
+    ) {
+      // kept-alive components, treat as a patch
+      var mountedNode = vnode; // work around flow
+      componentVNodeHooks.prepatch(mountedNode, mountedNode);
+    } else {
+      var child = vnode.componentInstance = createComponentInstanceForVnode(
+        vnode,
+        activeInstance
+      );
+      child.$mount(hydrating ? vnode.elm : undefined, hydrating);
+    }
+  }
+  ```
+* **createComponentInstanceForVnode** 方法 实例化 之前 构造出的子类的构造函数 构造函数里面调用 `this._init(options)` 方法去初始化 组件里面的一些生命周期 事件 state 等等 其实就是 _init 方法做的一些事情 然后返回 `this._init(options)` 构造出来的实例
+
+  ```javascript
+  function createComponentInstanceForVnode (
+    vnode, // we know it's MountedComponentVNode but flow doesn't
+    parent // activeInstance in lifecycle state
+  ) {
+    var options = {
+      _isComponent: true,
+      _parentVnode: vnode,
+      parent: parent
+    };
+    // check inline-template render functions
+    var inlineTemplate = vnode.data.inlineTemplate;
+    if (isDef(inlineTemplate)) {
+      options.render = inlineTemplate.render;
+      options.staticRenderFns = inlineTemplate.staticRenderFns;
+    }
+    return new vnode.componentOptions.Ctor(options)
+  }
+  ```
