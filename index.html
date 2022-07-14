@@ -8,8 +8,11 @@
 </head>
 <body>
   <div id="app">
-
-    <child1 />
+    <button @click="switchComp('child1')">组件1</button>
+    <button @click="switchComp('child2')">组件2</button>
+    <keep-alive>
+      <component :is='chooseComponent'></component>
+    </keep-alive>
   </div>
   <script src="./js/index.js"></script>
   <script>

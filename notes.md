@@ -1,14 +1,14 @@
-># 模板编译
+# 1. 模板编译
 
->## pase函数
+## pase函数
 
 里面维护了一个 ***stack***  然后调用 ***parseHTMl*** 并且传入 **template**模板 和 **start** 、**end** 、**chars** 、**comment** 四个方法
 
->### parseHTML函数
+### parseHTML函数
 
 里面也维护了一个 ***stack***  以及游标 ***index*** 循环解析模板 用 `template.indexOf('<')` 来匹配 匹配到了 ***为0*** 先后判断分别是 是否为 ***comment*** 、***条件注释*** 、***Doctype*** 、***End Tag*** 、***Start Tag***
 
->#### 解析Start Tag
+#### 解析Start Tag
 
 调用 **parseStartTag** 这个方法主要匹配标签的开始到结束以及里面所有的属性 `<div id="app">` 顺序依次是 `<div` 、`id="app"` 、`>` 通过 **advance** 方法去记录游标 ***index*** 的位置并且通过 **subString** 来截取字符串 再通过 **while** 循环匹配 **attr** 直到属性全部匹配完匹配到 `>` 结束 最终得到一个 ***match*** 例如：
 
@@ -142,7 +142,7 @@
     }
   ]
 ```
->#### 解析 v-for
+#### 解析 v-for
 
 通过 **processFor** 方法来处理 ***v-for*** 然后通过 **processFor** 里的 **getAndRemoteAttr** 方法 得到 ***v-for*** 属性的值 例如：`item in list` 然后通过循环得到 ***v-for*** 在 **attrList** 的位置 然后进行删除
 
@@ -198,11 +198,11 @@ function getAndRemoveAttr (
 ```
 
 
->#### 解析文本
+#### 解析文本
 
 从解析的当前位置到下一个 `<` 如果 `indexOf('<')` 大于0 说明之间是文本内容
 
->##### 解析{{}}
+##### 解析{{}}
 
 通过 **parseText** 方法最终得到 这样的 res 其中有个 **parseFilters** 解析过滤器
 
@@ -231,7 +231,7 @@ function getAndRemoveAttr (
   type: 2
 }
 ```
->#### 解析End Tag
+#### 解析End Tag
 
 如匹配到闭合标签 随后将执行 **parseEndTag** 方法 从后向前循环 然后调用 **parseHTML** 传进来的 **end** 方法 然后通过 `stack.length -= 1` pop掉 **parse** 方法里的最新解析到的 ***AST*** 元素 最后调用 **closeElement** 方法 里面通过调用 **processElement** 方法 然后通过其里面的 **processKey**, **processRef**, **processSlotContent**, **processSlotOutlet**, **processComponent**, **processAttrs** 方法分别对元素进行 ***key*** , ***Ref***, ***slot***, ***componnet(:is)***, ***Attr*** 进行处理 然后将处理好的 ***element*** 进行
 
@@ -241,7 +241,7 @@ element.parent = currentParent
 ```
 然后再将 **parseHTML** 的 ***stack*** 通过 `stack.length = pos` pop掉最新的解析标签
 
-># AST生成render函数
+# 2. AST生成render函数
 
 调用 **generate** 方法 传入解析好的 ***AST*** 方法内部调用 **genElement** 方法 传入 ***AST*** 和 ***option*** 
 
@@ -253,7 +253,7 @@ element.parent = currentParent
   ]
 
 ```
->## genElement函数
+## genElement函数
 
 通过各种判断来决定生成什么
 
@@ -374,7 +374,7 @@ code = "_c(
 ```
 然后利用code拼接一个 **with** 函数的字符串 再通过 `new Function(code)` 得到一个 ***render*** 函数
 
-># mount阶段
+# 3. mount阶段
 
 在挂载阶段之前 先 **callHook** 一下 **beforeMount** 的函数 然后给 **updateComponent** 赋值
 
@@ -459,7 +459,7 @@ Vue.prototype._update = function (vnode, hydrating) {
   // updated in a parent's updated hook.
 }
 ```
->## 第一次挂载 （initial render）
+## 第一次挂载 （initial render）
 
 第一次挂载 进行 **patch** 的时候 传递的 ***oldVnode*** 就是真实的Dom **vm.$el** ***vnode*** 就是通过 **_render** 方法生成的 ***vnode*** 
 
@@ -574,7 +574,7 @@ function patch (oldVnode, vnode, hydrating, removeOnly) {
   return vnode.elm
 }
 ```
->### createElm
+### createElm
 
 这个方法主要是将 ***vnode*** 转为 真实的 Dom 结构<br>
 createElm 主要接收 虚拟 Dom 对象 和 当前虚拟 Dom 父节点 以及 虚拟Dom 上的 Ele属性（真实的Dom） 就是形参中的 refElm<br>
@@ -687,7 +687,7 @@ function createChildren (vnode, children, insertedVnodeQueue) {
   }
 }
 ```
->#### invokeCreateHooks
+#### invokeCreateHooks
 
 这个方法主要用来处理 ***vnode*** 上面 ***data*** 属性 cbs.create 里面主要存放了 一些 update 标签上的属性的方法
 同时，标签上写的 方法 也是在这里 通过 updateDOMListeners 来注册的
@@ -717,7 +717,7 @@ function invokeCreateHooks (vnode, insertedVnodeQueue) {
   }
 }
 ```
->##### updateDOMListeners
+##### updateDOMListeners
 
 基本原理还是利用 **addEventListener** 来注册事件<br>
 在这个方法里面拿到 **oldVnode** 和 **vnode** 上面 data 上面的 on 属性 然后传入 **updateListeners** 这个方法<br>
@@ -727,11 +727,11 @@ function invokeCreateHooks (vnode, insertedVnodeQueue) {
 在 **add** 方法里 通过 **addEventListener** 注册事件<br>
 最后移除掉 oldVnode 上面的 事件<br>
 
-># update 阶段
+# 4. update 阶段
 
->## patchVnode
+## patchVnode
 
-该方法主要是对node节点进行 **pathc** 进行打补丁<br>
+该方法主要是对node节点进行 **patch** 进行打补丁<br>
 基本逻辑梳理<br>
 如果 **oldVnode** 和 **vnode** 相等 则直接退出<br>
 如果 **oldVnode** 和 **vnode** 是静态节点 则直接退出 ***静态节点指的的类似于 `<div>我是静态的</div>` 里面没有任何变量的值***<br>
@@ -821,7 +821,7 @@ function patchVnode (
 }
 ```
 
->## Diff
+## Diff
 
 这个阶段主要是对子节点打 **patch** 通过 ***Diff*** 算法 来对比新旧 **vnode** 的区别 然后更新 旧的 **vnode** 完成数据更新<br>
 这里的 ***Diff*** 主要通过 两边向中间进行对比<br>
@@ -933,7 +933,7 @@ function sameVnode (a, b) {
 }
 ```
 
-># nextTick
+# 5. nextTick
 
 Vue里的Dom更新是异步 数据改变了并不会立即重新渲染 就是不会立即调用 生成好的 **render** 函数 这样的好处是 如果一个 ***Watcher***被多次触发 只会被推入到事件队列中一次
 
@@ -1143,7 +1143,7 @@ function flushSchedulerQueue () {
 }
 ```
 
-># 解析组件
+# 6. 解析组件
 
 在解析组件的时候 首先也是把它当做 普通标签来解析 但是在创建虚拟Dom的时候 会利用 `isHTMLTag` 方法 来判断 这个标签是不是 普通的HTML标签 先利用 **resolveAsset** 方法 拿到 组件里 ***components*** 里面的配置 然后通过 这个 tag 拿到对应的组件
 
@@ -1296,7 +1296,7 @@ components[tag] // 拿到对应的配置
   ```
 * 生成组件的vnode
   * 通过 new Vnode 生成组件的 vnode 节点
-
+  * 
 ```javascript
 function createComponent (
   Ctor,
@@ -1398,7 +1398,7 @@ function createComponent (
 }
 ```
 
-># 生成组件
+# 7. 生成组件
 
 生成组件的时候 同样要将组件的 vnode 转成真实的 dom 所以也需要调用 **createElm** 方法（如上）</br>
 * 在这个方法里 首先调用一下 **createComponent** 方法 并且如果是组件 在这个方法里执行对应的组件逻辑 最后返回是否是组件的布尔值
@@ -1456,7 +1456,7 @@ function createComponent (
     }
   }
   ```
-* **createComponentInstanceForVnode** 方法 实例化 之前 构造出的子类的构造函数 构造函数里面调用 `this._init(options)` 方法去初始化 组件里面的一些生命周期 事件 state 等等 其实就是 _init 方法做的一些事情 然后返回 `this._init(options)` 构造出来的实例
+* **createComponentInstanceForVnode** 方法 实例化 之前 构造出的子类的构造函数 构造函数里面调用 `this._init(options)` 方法去初始化 组件里面的一些生命周期 事件 state 等等 其实就是 _init 方法做的一些事情 然后返回 `this._init(options)` 构造出来的实例 赋值给 vnode.componentInstance 属性 在之后 渲染里 提供给 组件的钩子函数 **init** 用
 
   ```javascript
   function createComponentInstanceForVnode (
@@ -1477,3 +1477,89 @@ function createComponent (
     return new vnode.componentOptions.Ctor(options)
   }
   ```
+
+# 8. keep-alive
+
+解析 **keep-alive** 组件和解析普通的组件是一样的 参照上面逻辑 只不过是 **keep-alive** 组件的 options 是 Vue 提供的 如下 有些 `name, abstract, props created, destroyed, mounted, render` 配置
+* 
+
+```javascript
+var KeepAlive = {
+  name: 'keep-alive',
+  abstract: true,
+
+  props: {
+    include: patternTypes,
+    exclude: patternTypes,
+    max: [String, Number]
+  },
+
+  created: function created () {
+    this.cache = Object.create(null);
+    this.keys = [];
+  },
+
+  destroyed: function destroyed () {
+    for (var key in this.cache) {
+      pruneCacheEntry(this.cache, key, this.keys);
+    }
+  },
+
+  mounted: function mounted () {
+    var this$1 = this;
+
+    this.$watch('include', function (val) {
+      pruneCache(this$1, function (name) { return matches(val, name); });
+    });
+    this.$watch('exclude', function (val) {
+      pruneCache(this$1, function (name) { return !matches(val, name); });
+    });
+  },
+
+  render: function render () {
+    var slot = this.$slots.default;
+    var vnode = getFirstComponentChild(slot);
+    var componentOptions = vnode && vnode.componentOptions;
+    if (componentOptions) {
+      // check pattern
+      var name = getComponentName(componentOptions);
+      var ref = this;
+      var include = ref.include;
+      var exclude = ref.exclude;
+      if (
+        // not included
+        (include && (!name || !matches(include, name))) ||
+        // excluded
+        (exclude && name && matches(exclude, name))
+      ) {
+        return vnode
+      }
+
+      var ref$1 = this;
+      var cache = ref$1.cache;
+      var keys = ref$1.keys;
+      var key = vnode.key == null
+        // same constructor may get registered as different local components
+        // so cid alone is not enough (#3269)
+        ? componentOptions.Ctor.cid + (componentOptions.tag ? ("::" + (componentOptions.tag)) : '')
+        : vnode.key;
+      if (cache[key]) {
+        vnode.componentInstance = cache[key].componentInstance;
+        // make current key freshest
+        remove(keys, key);
+        keys.push(key);
+      } else {
+        cache[key] = vnode;
+        keys.push(key);
+        // prune oldest entry
+        if (this.max && keys.length > parseInt(this.max)) {
+          pruneCacheEntry(cache, keys[0], keys, this._vnode);
+        }
+      }
+
+      vnode.data.keepAlive = true;
+    }
+    return vnode || (slot && slot[0])
+  }
+};
+```
