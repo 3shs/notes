@@ -8,19 +8,32 @@
 </head>
 <body>
   <div id="app">
-    <button @click="switchComp('child1')">组件1</button>
+    <div v-show="isShow"></div>
+    <!-- <button @click="switchComp('child1')">组件1</button>
     <button @click="switchComp('child2')">组件2</button>
     <keep-alive>
       <component :is='chooseComponent'></component>
-    </keep-alive>
+    </keep-alive> -->
   </div>
   <script src="./js/index.js"></script>
   <script>
     var child1 = {
       template: '<div>组件1:<input type="text"/></div>',
+      activated() {
+        console.log('child1 Activated')
+      },
+      deactivated() {
+        console.log('child1 deactivated')
+      },
     }
     var child2 = {
-      template: '<div>组件2:<input type="text"/></div>'
+      template: '<div>组件2:<input type="text"/></div>',
+      activated() {
+        console.log('child2 Activated')
+      },
+      deactivated() {
+        console.log('child2 deactivated')
+      },
     }
     let vm = new Vue({
       el: '#app',
@@ -39,6 +52,7 @@
           txt: '1234',
           list: [{name: 'zs', id: 1},{name: 'ls', id: 2},{name: 'ww', id: 3}],
           chooseComponent: 'child1',
+          isShow: false
         }
       },
 
