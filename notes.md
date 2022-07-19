@@ -374,6 +374,74 @@ code = "_c(
 ```
 然后利用code拼接一个 **with** 函数的字符串 再通过 `new Function(code)` 得到一个 ***render*** 函数
 
+### 解析v-if
+
+* 在前面模板解析的时候 对于标签上的属性都做了解析 当然也包括 **v-if** 解析出来基本格式：
+
+```javascript
+if: "isShow",
+ifConditions: [
+  {
+    exp: 'isShow',
+    block: {
+      // 自身的所有AST属性
+    }
+  },
+]
+```
+* 然后在 `genElement` 方法里对 **AST** 节点上 是否存在 **el.if** 属性进行判断 如果有 则调用 `genIf` 方法 该方法返回 `genIfConditions` 的结果
+
+```javascript
+function genIf (
+  el,
+  state,
+  altGen,
+  altEmpty
+) {
+  el.ifProcessed = true; // avoid recursion
+  return genIfConditions(el.ifConditions.slice(), state, altGen, altEmpty)
+}
+```
+* `genIfConditions` 内部主要
+ * 首先判断 **AST** 上面的 **ifConditions** 是否为空 如果为空 直接返回 空节点 或者 '_e' 利用 `_e` 方法创建的空节点
+ * 如果不为空则继续往下走 拿到 **condition** 头部的数据对象
+ * 然后判断 该头部数据是有值 如果有值 则返回 一段经过处理好的 三元字符串 大致如下
+ * 最后在调用生成好的 render 函数的时候 根据 **isShow** 来判断 是否生成对应的元素还是空节点
+
+ ```javascript
+ isShow ? _c('div') : _e()
+ ```
+
+```javascript
+function genIfConditions (
+  conditions,
+  state,
+  altGen,
+  altEmpty
+) {
+  if (!conditions.length) {
+    return altEmpty || '_e()'
+  }
+
+  var condition = conditions.shift();
+  if (condition.exp) {
+    // 这里 genTernaryExp 方法 目的就是返回 解析好的 元素 code
+    return ("(" + (condition.exp) + ")?" + (genTernaryExp(condition.block)) + ":" + (genIfConditions(conditions, state, altGen, altEmpty)))
+  } else {
+    return ("" + (genTernaryExp(condition.block)))
+  }
+
+  // v-if with v-once should generate code like (a)?_m(0):_m(1)
+  function genTernaryExp (el) {
+    return altGen
+      ? altGen(el, state)
+      : el.once
+        ? genOnce(el, state)
+        : genElement(el, state)
+  }
+}
+```
+
 # 3. mount阶段
 
 在挂载阶段之前 先 **callHook** 一下 **beforeMount** 的函数 然后给 **updateComponent** 赋值
@@ -1296,7 +1364,7 @@ components[tag] // 拿到对应的配置
   ```
 * 生成组件的vnode
   * 通过 new Vnode 生成组件的 vnode 节点
-  * 
+
 ```javascript
 function createComponent (
   Ctor,
@@ -1481,7 +1549,83 @@ function createComponent (
 # 8. keep-alive
 
 解析 **keep-alive** 组件和解析普通的组件是一样的 参照上面逻辑 只不过是 **keep-alive** 组件的 options 是 Vue 提供的 如下 有些 `name, abstract, props created, destroyed, mounted, render` 配置
-* 
+
+## props
+
+接收三个属性：include exclude max<br>
+include: 表示只有匹配的组件才会被缓存<br>
+exclude: 表示任何匹配到的组件都不会被缓存<br>
+max: 表示缓存组件的最大数量<br>
+
+## created 
+
+在 **created** 里面初始化两个属性 `this.cache` 和 `this.keys`<br>
+`this.cache` 是一个对象 里面存储需要缓存的组件 `this.keys` 是一个数组 用来存储缓存组件的 **key**<br>
+
+## destroyed
+
+当 **keep-alive** 组件被销毁时 此时会调用 **destroyed** 钩子函数 该钩子函数里会遍历 `this.cache` 对象 然后将那些缓存的并且当前没有处于被渲染的组件都销毁并将其从 `this.cache` 对象中剔除
+
+```javascript
+function pruneCacheEntry (
+  cache,
+  key,
+  keys,
+  current
+) {
+  var cached$$1 = cache[key];
+  if (cached$$1 && (!current || cached$$1.tag !== current.tag)) {
+    cached$$1.componentInstance.$destroy();
+  }
+  cache[key] = null;
+  remove(keys, key);
+}
+```
+
+## mounted
+
+在 mounted 钩子函数中观测 **include** **exclude** 的变化<br>
+如果 **include** 和 **exclude** 发生了变化 即表示定义需要缓存的的组件规则或者不需要缓存的组件的规则发生了变化 那么就调用 **pruneCache** 方法
+* 该方法对 `this.cache` 对象进行遍历 取出每一项的 **name** 值 用其与新的缓存规则进行匹配 如果匹配不上 则表示新的缓存规则下该组件已经不需要缓存 则调用 **pruneCacheEntry** 方法将这个已经不需要缓存的组件先销毁掉 然后将其从 `this.cache` 对象中剔除掉
+
+```javascript
+function pruneCache (keepAliveInstance, filter) {
+  const { cache, keys, _vnode } = keepAliveInstance
+  for (const key in cache) {
+    const cachedNode = cache[key]
+    if (cachedNode) {
+      const name = getComponentName(cachedNode.componentOptions)
+      if (name && !filter(name)) {
+        pruneCacheEntry(cache, key, keys, _vnode)
+      }
+    }
+  }
+}
+```
+
+## render
+
+* 在对 **keep-alive** 进行挂载的时候 同样会执行到 mounted 的阶段 走之前上面的 mounted 阶段 回调生成好的 render 函数 因为 **keep-alive** 的 **render** 函数 是 Vue 已经定义好了 所以直接调用 **keep-alive** 里的 **render** 函数（函数组件）
+* 因为通常来说我们在 **keep-alive** 里面写的是组件或者Dom 所以 keep-alive 默认获取插槽里的第一个子节点或者第一个子节点
+* 然后调用 **getComponentName** 方法去拿到组件的名称 这个方法优先取组件的 **name** 字段， 如果没有则获取 组件的tag
+* 然后用组件的名称去和 **include** 和 **exclude** 的规则去匹配 
+* 如果组件名称与 **include** 规则不匹配或者与 **exclude** 规则匹配，则表示不缓存该组件，直接返回这个组件的 **vnode** 否则就是走接下来的缓存逻辑
+* 首先将 this 赋值 给 **ref$1** this 指向 就是在 render 函数 **call** 调用的时候 绑的 指向 `vm._renderProxy`
+* 然后取出 **ref$1** 的 **cache** 再去 取 **key** 值 拿到 **key** 值后去 **cache** 中去找 如果缓存中有 直接去缓存中去拿到 **vnode** 的组件实例，此时重新调整该组件的 **key** 的顺序，将其从原来的地方删除掉 并重新放在 `this.keys` 中最后一个
+* 如果 `this.cache` 中没有该 **key** 表明该组件还没有被缓存过，则以该组件的 **key** 为键，组件 **vnode** 为值，将其存入 `this.cache` 中，并且把 **key** 存入 `this.keys` 中。此时再判断 `this.keys` 中缓存组件的数量是否超过了设置的最大缓存数量值 `this.max`，如果超过了，则把第一个缓存组件删掉
+* 最后将 `vnode.data.keepAlive = true` 最后将 **vnode** 返回
+
+有一个问题：<font  color=red>**为什么要删除第一个缓存组件并且为什么命中缓存了还要调整组件key的顺序？**</font>
+
+这其实应用了一个缓存淘汰策略LRU：
+> LRU（**Least recently used**，最近最少使用）算法根据数据的历史访问记录来进行淘汰数据，其核心思想是“如果数据最近被访问过，那么将来被访问的几率也更高”。
+
+它的算法是这样子的：
+1. 将新数据从尾部插入到 `this.keys` 中
+2. 每当缓存命中，则将数据移到 `this.keys` 尾部
+3. 当 `this.keys` 满的时候，将头部数据丢弃
+
+LRU的核心思想是思想如果数据被访问过 那么被访问的几率也更高，所以我们将命中缓存的组件 **key** 重新插入到 `this.keys` 的尾部，这样一来 `this.keys` 中越往头部的数据将来被访问的几率越低 所以当缓存数量达到最大值的时 我们就删除将来被访问几率最低的数据 即 `this.keys` 中第一个缓存的组件即 `this.keys` 中的头部组件
 
 ```javascript
 var KeepAlive = {
@@ -1563,3 +1707,7 @@ var KeepAlive = {
   }
 };
 ```
+## 生命周期函数
+
+组件一旦被 **keep-alive** 缓存 那么再次渲染的时候就不会执行 **created** 和 **mounted** 等钩子函数<br>
+有时候我们需要再次渲染的时候需要做一些事情 Vue 提供了 两个钩子函数 **activated** 和 **deactivated** 他们的执行时机是 **keep-alive** 包裹的组件激活时调用和停用时调用
