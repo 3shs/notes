@@ -442,6 +442,48 @@ function genIfConditions (
 }
 ```
 
+### 解析v-show
+
+在解析模板的阶段会对 `v-show` 这个属性转化为 指令的形式
+
+```javascript
+// AST 比如这样子
+{
+  attrsList,
+  attrsMap,
+  children: [],
+  directives: [
+    {
+      arg: null,
+      end: 39,
+      isDynamicArg: false,
+      modifiers: undefined,
+      name: "show",
+      rawName: "v-show",
+      start: 24,
+      value: "isShow",
+    }
+  ],
+  end: 46,
+  hasBindings: true,
+  parent: {type: 1, tag: 'div', attrsList: Array(1), attrsMap: {…}, rawAttrsMap: {…}, …}
+  plain: false,
+  rawAttrsMap,
+  start: 19,
+  tag: "div",
+  type: 1,
+}
+```
+然后在将 **AST** 转为 render 的 **code** 的时候 通过 `genData$2` 方法里的 `genDirectives` 方法 拼接出 Vue 想要的 字符串 放到 **data** 里的占位里
+
+```javascript
+// 解析成这样
+"{directives:[{name:"show",rawName:"v-show",value:(isShow),expression:"isShow"}]}"
+
+```
+最后在创建真实Dom的时候 调用 `invokeCreateHooks` 方法 该方法里面通过 `updateDirectives` 来更新指令 就是 Vue 内部自定义的 `v-show` 指令 通过 `bind` 方法来处理 最后 通过之前的 **value** 来决定是否 `display:none`
+
+
 # 3. mount阶段
 
 在挂载阶段之前 先 **callHook** 一下 **beforeMount** 的函数 然后给 **updateComponent** 赋值
