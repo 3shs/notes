@@ -8,7 +8,8 @@
 </head>
 <body>
   <div id="app">
-    <div v-show="isShow"></div>
+    <button @click="test">按钮</button>
+    <div v-show="isShow">11</div>
     <!-- <button @click="switchComp('child1')">组件1</button>
     <button @click="switchComp('child2')">组件2</button>
     <keep-alive>
@@ -72,6 +73,9 @@
         },
         switchComp(component) {
           this.chooseComponent = component;
+        },
+        test() {
+          this.isShow = true
         }
       },
     })
